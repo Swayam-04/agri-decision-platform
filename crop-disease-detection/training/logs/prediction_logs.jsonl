@@ -1,0 +1,5 @@
+{"timestamp": "2026-03-17T15:37:11.773627", "predicted_disease": "Uncertain / Requires Review", "confidence": 0.3402, "severity": "Unknown", "latency_ms": 137.14, "metadata": {"batch": true}}
+{"timestamp": "2026-03-17T15:37:11.775297", "predicted_disease": "Uncertain / Requires Review", "confidence": 0.3402, "severity": "Unknown", "latency_ms": 137.14, "metadata": {"batch": true}}
+{"timestamp": "2026-03-17T15:37:11.776405", "predicted_disease": "Uncertain / Requires Review", "confidence": 0.3402, "severity": "Unknown", "latency_ms": 137.14, "metadata": {"batch": true}}
+{"timestamp": "2026-03-17T15:37:11.777349", "predicted_disease": "Uncertain / Requires Review", "confidence": 0.3402, "severity": "Unknown", "latency_ms": 137.14, "metadata": {"batch": true}}
+{"timestamp": "2026-03-17T15:37:11.795580", "predicted_disease": "Uncertain / Requires Review", "confidence": 0.3402, "severity": "Unknown", "latency_ms": 137.14, "metadata": {"batch": true}}
