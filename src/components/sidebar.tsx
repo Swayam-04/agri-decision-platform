@@ -73,13 +73,8 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-border px-5 py-4">
-          <div className="rounded-lg bg-emerald-50 px-3 py-2.5">
-            <p className="text-xs font-medium text-emerald-800">Demo Mode</p>
-            <p className="text-[10px] text-emerald-600 mt-0.5">
-              Using simulated AI predictions for demonstration
-            </p>
-          </div>
+        <div className="border-t border-border px-5 py-4 flex items-center justify-center">
+          <p className="text-xs font-medium text-muted-foreground">made with ❤️ by INNOVATEX Team</p>
         </div>
       </div>
     </aside>

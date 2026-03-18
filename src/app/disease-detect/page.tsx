@@ -60,7 +60,6 @@ export default function DiseaseDetectPage() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Upload a crop leaf image to detect diseases using CNN-based vision analysis.
-          Simulated MobileNet/ResNet model for demonstration.
         </p>
       </div>
 
@@ -122,16 +121,7 @@ export default function DiseaseDetectPage() {
               )}
             </Button>
 
-            {/* Demo helper */}
-            {!imagePreview && (
-              <div className="bg-blue-50 rounded-lg p-3">
-                <p className="text-xs text-blue-800 font-medium">Demo Tip</p>
-                <p className="text-[11px] text-blue-600 mt-0.5">
-                  Upload any leaf photo to see the AI analysis. The simulation will generate realistic
-                  disease detection results based on your selected crop type.
-                </p>
-              </div>
-            )}
+
           </CardContent>
         </Card>
 
