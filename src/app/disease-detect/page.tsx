@@ -39,9 +39,13 @@ export default function DiseaseDetectPage() {
         body: JSON.stringify({ cropType, imageBase64: imagePreview }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to analyze image");
+      }
       setResult(data);
     } catch (err) {
       console.error(err);
+      setResult(null);
     } finally {
       setLoading(false);
     }
