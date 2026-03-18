@@ -3,7 +3,7 @@
 import { useLanguage } from "@/context/LanguageContext";
 
 export function useTranslation() {
-  const { t } = useLanguage();
-  return { t };
+  const { t, language } = useLanguage();
+  return { t, language };
 }
 

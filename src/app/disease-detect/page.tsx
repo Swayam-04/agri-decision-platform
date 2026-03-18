@@ -11,7 +11,7 @@ import { Microscope, Upload, Loader2, AlertCircle, ShieldCheck, Pill, Shield } f
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function DiseaseDetectPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [cropType, setCropType] = useState("Rice");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ export default function DiseaseDetectPage() {
     try {
       const res = await fetch("/api/disease-detect", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({ cropType, imageBase64: imagePreview }),
       });
       const data = await res.json();
@@ -127,6 +127,7 @@ export default function DiseaseDetectPage() {
               )}
             </Button>
 
+            {/* Demo helper removed */}
           </CardContent>
         </Card>
 

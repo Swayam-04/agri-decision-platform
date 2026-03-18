@@ -11,7 +11,7 @@ import { Bot, User, Send, Loader2, Sparkles } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ChatbotPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [cropType, setCropType] = useState("Rice");
   const [region, setRegion] = useState("Punjab");
   const [season, setSeason] = useState("Kharif");
@@ -19,16 +19,16 @@ export default function ChatbotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content: "Namaste! I'm your CropIntel AI assistant. I can help you with disease risk, profit estimates, market advice, irrigation guidance, and pest alerts.\n\nWhat would you like to know about your farm?",
+      content: t("chat.greeting"),
       timestamp: new Date().toISOString(),
     },
   ]);
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([
-    "What diseases affect my crop?",
-    "How much profit can I expect?",
-    "Should I sell or store?",
-    "Is pest risk high right now?",
+    t("chat.suggestion1"),
+    t("chat.suggestion2"),
+    t("chat.suggestion3"),
+    t("chat.suggestion4"),
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +48,7 @@ export default function ChatbotPage() {
     try {
       const res = await fetch("/api/chatbot", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({ message, cropType, region, season, history: messages }),
       });
       const data = await res.json();
@@ -58,7 +58,7 @@ export default function ChatbotPage() {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Sorry, I had trouble understanding that. Please try again.", timestamp: new Date().toISOString() },
+        { role: "assistant", content: t("chat.error"), timestamp: new Date().toISOString() },
       ]);
     } finally {
       setLoading(false);
@@ -100,7 +100,7 @@ export default function ChatbotPage() {
         <CardHeader className="pb-2 border-b">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Bot className="h-4 w-4 text-emerald-500" />
-            CropIntel AI Chat
+            {t("chat.botName")}
             <Sparkles className="h-3 w-3 text-yellow-500" />
           </CardTitle>
         </CardHeader>

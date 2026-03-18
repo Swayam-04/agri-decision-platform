@@ -13,7 +13,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function PriceForecastPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [cropType, setCropType] = useState("Tomato");
   const [region, setRegion] = useState("Maharashtra");
   const [currentPrice, setCurrentPrice] = useState("1800");
@@ -27,7 +27,7 @@ export default function PriceForecastPage() {
     try {
       const res = await fetch("/api/price-forecast", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({
           cropType, region,
           currentPrice: parseFloat(currentPrice),

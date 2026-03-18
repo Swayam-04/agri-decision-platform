@@ -15,7 +15,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 const SOIL_TYPES = ["Alluvial", "Black", "Red", "Laterite", "Sandy", "Loamy", "Clay"];
 
 export default function IrrigationPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [cropType, setCropType] = useState("Rice");
   const [region, setRegion] = useState("Punjab");
   const [soilType, setSoilType] = useState("Alluvial");
@@ -32,7 +32,7 @@ export default function IrrigationPage() {
     try {
       const res = await fetch("/api/irrigation", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({ cropType, region, soilType, temperature, humidity, recentRainfall: rainfall, season }),
       });
       setResult(await res.json());
@@ -130,7 +130,7 @@ export default function IrrigationPage() {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{t("irrig.pumpStatus")}</p>
                 {result.pumpDurationMinutes > 0 && (
-                  <p className="text-[10px] text-muted-foreground">{result.pumpDurationMinutes} min cycle</p>
+                  <p className="text-[10px] text-muted-foreground">{result.pumpDurationMinutes} {t("common.min")} {t("common.cycle")}</p>
                 )}
               </CardContent>
             </Card>
@@ -173,11 +173,11 @@ export default function IrrigationPage() {
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="bg-muted/50 rounded-lg p-3">
                     <span className="text-muted-foreground">{t("irrig.waterReq")}</span>
-                    <div className="font-semibold text-base mt-1">{result.waterRequired_liters} L/acre</div>
+                    <div className="font-semibold text-base mt-1">{result.waterRequired_liters} {t("common.L_acre")}</div>
                   </div>
                   <div className="bg-muted/50 rounded-lg p-3">
                     <span className="text-muted-foreground">{t("irrig.costSaving")}</span>
-                    <div className="font-semibold text-base mt-1 text-emerald-600">Rs {result.costSaving_rs}</div>
+                    <div className="font-semibold text-base mt-1 text-emerald-600">{t("common.Rs")} {result.costSaving_rs}</div>
                   </div>
                 </div>
 
@@ -219,7 +219,7 @@ export default function IrrigationPage() {
                       <span className="font-medium w-20">{entry.day}</span>
                       <span className="text-muted-foreground flex-1">{entry.action}</span>
                       <span className="font-medium text-blue-600">
-                        {entry.waterLiters > 0 ? `${entry.waterLiters} L` : "-"}
+                        {entry.waterLiters > 0 ? `${entry.waterLiters} ${t("common.L")}` : "-"}
                       </span>
                     </div>
                   ))}

@@ -11,7 +11,7 @@ import { AlertTriangle, Loader2, XCircle, CheckCircle2, Info, ShieldAlert } from
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function RiskAdvisoryPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [region, setRegion] = useState("Rajasthan");
   const [season, setSeason] = useState("Kharif");
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export default function RiskAdvisoryPage() {
     try {
       const res = await fetch("/api/risk-advisory", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({ region, season }),
       });
       setResult(await res.json());

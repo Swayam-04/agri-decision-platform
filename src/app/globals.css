@@ -45,9 +45,10 @@
 }
 
 :root {
-  --radius: 1.5rem; /* 24px organic rounded */
+  --radius: 1.5rem;
+  /* 24px organic rounded */
   /* Warm earthy light theme */
-  --background: #fdf6e3;
+  --background: #f8f5f2;
   --foreground: #3d1f0a;
   --card: #f5ebd9;
   --card-foreground: #3d1f0a;
@@ -80,14 +81,12 @@
   --sidebar-ring: #16a34a;
 }
 
-.dark {
-  /* Same as root for this theme */
-}
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 16px;
@@ -109,6 +108,7 @@
 .earthy-theme {
   position: relative;
 }
+
 .earthy-theme::before {
   content: "";
   position: fixed;
@@ -129,9 +129,17 @@
 
 /* Leaf wiggle on hover */
 @keyframes leaf-wiggle {
-  0%, 100% { transform: rotate(-2deg); }
-  50% { transform: rotate(4deg); }
+
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+
+  50% {
+    transform: rotate(4deg);
+  }
 }
+
 .hover-leaf:hover {
   animation: leaf-wiggle 0.5s ease-in-out;
 }
@@ -242,14 +250,37 @@
   border-radius: 999px;
 }
 
-.sun-ray-0 { transform: translate(-1px, -37px) rotate(0deg); }
-.sun-ray-1 { transform: translate(-1px, -37px) rotate(45deg); }
-.sun-ray-2 { transform: translate(-1px, -37px) rotate(90deg); }
-.sun-ray-3 { transform: translate(-1px, -37px) rotate(135deg); }
-.sun-ray-4 { transform: translate(-1px, -37px) rotate(180deg); }
-.sun-ray-5 { transform: translate(-1px, -37px) rotate(225deg); }
-.sun-ray-6 { transform: translate(-1px, -37px) rotate(270deg); }
-.sun-ray-7 { transform: translate(-1px, -37px) rotate(315deg); }
+.sun-ray-0 {
+  transform: translate(-1px, -37px) rotate(0deg);
+}
+
+.sun-ray-1 {
+  transform: translate(-1px, -37px) rotate(45deg);
+}
+
+.sun-ray-2 {
+  transform: translate(-1px, -37px) rotate(90deg);
+}
+
+.sun-ray-3 {
+  transform: translate(-1px, -37px) rotate(135deg);
+}
+
+.sun-ray-4 {
+  transform: translate(-1px, -37px) rotate(180deg);
+}
+
+.sun-ray-5 {
+  transform: translate(-1px, -37px) rotate(225deg);
+}
+
+.sun-ray-6 {
+  transform: translate(-1px, -37px) rotate(270deg);
+}
+
+.sun-ray-7 {
+  transform: translate(-1px, -37px) rotate(315deg);
+}
 
 .hero-moon {
   display: flex;
@@ -290,18 +321,64 @@
   animation: star-twinkle 2s ease-in-out infinite;
 }
 
-.star-dot-0 { top: 18px; right: 210px; animation-delay: 0s; }
-.star-dot-1 { top: 32px; right: 260px; animation-delay: 0.2s; }
-.star-dot-2 { top: 12px; right: 290px; animation-delay: 0.4s; }
-.star-dot-3 { top: 40px; right: 190px; animation-delay: 0.6s; }
-.star-dot-4 { top: 22px; right: 230px; animation-delay: 0.8s; }
-.star-dot-5 { top: 10px; right: 250px; animation-delay: 1s; }
-.star-dot-6 { top: 36px; right: 280px; animation-delay: 1.2s; }
-.star-dot-7 { top: 16px; right: 310px; animation-delay: 1.4s; }
+.star-dot-0 {
+  top: 18px;
+  right: 210px;
+  animation-delay: 0s;
+}
+
+.star-dot-1 {
+  top: 32px;
+  right: 260px;
+  animation-delay: 0.2s;
+}
+
+.star-dot-2 {
+  top: 12px;
+  right: 290px;
+  animation-delay: 0.4s;
+}
+
+.star-dot-3 {
+  top: 40px;
+  right: 190px;
+  animation-delay: 0.6s;
+}
+
+.star-dot-4 {
+  top: 22px;
+  right: 230px;
+  animation-delay: 0.8s;
+}
+
+.star-dot-5 {
+  top: 10px;
+  right: 250px;
+  animation-delay: 1s;
+}
+
+.star-dot-6 {
+  top: 36px;
+  right: 280px;
+  animation-delay: 1.2s;
+}
+
+.star-dot-7 {
+  top: 16px;
+  right: 310px;
+  animation-delay: 1.4s;
+}
 
 @keyframes star-twinkle {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 .dashboard-root.day .sun-with-rays {
@@ -382,27 +459,96 @@ html.night aside {
   border-right-color: rgba(22, 163, 74, 0.3) !important;
 }
 
-html.night aside span, 
-html.night aside p, 
-html.night aside h1, 
+html.night aside span,
+html.night aside p,
+html.night aside h1,
 html.night aside h3,
 html.night aside div {
   color: #f0fdf4 !important;
 }
 
 /* Override exact tailwind hex utilities applied in page.tsx / sidebar.tsx */
-html.night .text-\[\#3d1f0a\] { color: #f0fdf4 !important; }
-html.night .text-\[\#6b4423\] { color: #86efac !important; }
-html.night .text-\[\#16a34a\] { color: #4ade80 !important; }
+html.night .text-\[\#3d1f0a\] {
+  color: #f0fdf4 !important;
+}
 
-html.night .bg-\[\#fdf6e3\], html.night .bg-background { background-color: #0d1b10 !important; border-color: rgba(22, 163, 74, 0.3) !important; color: #f0fdf4 !important; }
-html.night .bg-\[\#faf4e8\], html.night .bg-popover { background-color: #064e3b !important; border-color: rgba(22, 163, 74, 0.3) !important; color: #f0fdf4 !important; }
-html.night .bg-\[\#f5ebd9\], html.night .bg-card { background-color: #0d1f10 !important; border-color: rgba(22, 163, 74, 0.3) !important; color: #f0fdf4 !important; }
+html.night .text-\[\#6b4423\] {
+  color: #86efac !important;
+}
+
+html.night .text-\[\#16a34a\] {
+  color: #4ade80 !important;
+}
+
+html.night .bg-\[\#fdf6e3\],
+html.night .bg-background {
+  background-color: #0d1b10 !important;
+  border-color: rgba(22, 163, 74, 0.3) !important;
+  color: #f0fdf4 !important;
+}
+
+html.night .bg-\[\#faf4e8\],
+html.night .bg-popover {
+  background-color: #064e3b !important;
+  border-color: rgba(22, 163, 74, 0.3) !important;
+  color: #f0fdf4 !important;
+}
+
+html.night .bg-\[\#f5ebd9\],
+html.night .bg-card {
+  background-color: #0d1f10 !important;
+  border-color: rgba(22, 163, 74, 0.3) !important;
+  color: #f0fdf4 !important;
+}
+
+html.night .bg-\[\#e8dcc8\] {
+  background-color: #166534 !important;
+  color: #f0fdf4 !important;
+}
 
 /* Override exact border color hex combinations */
-html.night .border-\[rgba\(61\,31\,10\,0\.1\)\] { border-color: rgba(22, 163, 74, 0.3) !important; }
-html.night .border-\[rgba\(61\,31\,10\,0\.12\)\] { border-color: rgba(22, 163, 74, 0.3) !important; }
-html.night .border-\[rgba\(61\,31\,10\,0\.15\)\] { border-color: rgba(22, 163, 74, 0.3) !important; }
+html.night .border-\[rgba\(61\,31\,10\,0\.1\)\] {
+  border-color: rgba(22, 163, 74, 0.3) !important;
+}
 
-html.night .group-hover\:\opacity-20:hover { opacity: 0.05 !important; }
-html.night .hover\:bg-\[\#f5ebd9\]:hover { background-color: #064e3b !important; }
+html.night .border-\[rgba\(61\,31\,10\,0\.12\)\] {
+  border-color: rgba(22, 163, 74, 0.3) !important;
+}
+
+html.night .border-\[rgba\(61\,31\,10\,0\.15\)\] {
+  border-color: rgba(22, 163, 74, 0.3) !important;
+}
+
+html.night .group-hover\:\opacity-20:hover {
+  opacity: 0.05 !important;
+}
+
+html.night .hover\:bg-\[\#f5ebd9\]:hover {
+  background-color: #064e3b !important;
+}
+
+/* Custom Earthy Scrollbar */
+.scrollbar-earth::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scrollbar-earth::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-earth::-webkit-scrollbar-thumb {
+  background: rgba(61, 31, 10, 0.2);
+  border-radius: 10px;
+}
+
+.scrollbar-earth::-webkit-scrollbar-thumb:hover {
+  background: rgba(22, 163, 74, 0.5);
+}
+
+html.night .scrollbar-earth::-webkit-scrollbar-thumb {
+  background: rgba(22, 163, 74, 0.4);
+}
+
+html.night .scrollbar-earth::-webkit-scrollbar-thumb:hover {
+  background: rgba(22, 163, 74, 0.7);
+}

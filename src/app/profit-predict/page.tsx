@@ -12,7 +12,7 @@ import { TrendingUp, Loader2, IndianRupee, AlertTriangle, BarChart3 } from "luci
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ProfitPredictPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [cropType, setCropType] = useState("Rice");
   const [region, setRegion] = useState("Punjab");
   const [season, setSeason] = useState("Kharif");
@@ -27,7 +27,7 @@ export default function ProfitPredictPage() {
     try {
       const res = await fetch("/api/profit-predict", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({ cropType, region, acreage: parseFloat(acreage), season, irrigationType, soilType }),
       });
       setResult(await res.json());
@@ -126,32 +126,32 @@ export default function ProfitPredictPage() {
         {result && (
           <div className="lg:col-span-2 space-y-4">
             {/* Profit Summary */}
-            <Card className={`border-l-4 ${result.profitPerAcre >= 0 ? "border-l-emerald-500 bg-emerald-50/50" : "border-l-red-500 bg-red-50/50"}`}>
+            <Card className={`border-l-4 ${result.profitPerAcre >= 0 ? "border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20" : "border-l-red-500 bg-red-50/50 dark:bg-red-900/20"}`}>
               <CardContent className="pt-6 pb-6">
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-xs text-muted-foreground">{t("profit.revAcre")}</p>
-                    <p className="text-2xl font-bold text-blue-600">Rs {result.grossRevenuePerAcre.toLocaleString("en-IN")}</p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">Rs {result.grossRevenuePerAcre.toLocaleString("en-IN")}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t("profit.costAcre")}</p>
-                    <p className="text-2xl font-bold text-orange-600">Rs {result.inputCostPerAcre.toLocaleString("en-IN")}</p>
+                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">Rs {result.inputCostPerAcre.toLocaleString("en-IN")}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t("profit.profitAcre")}</p>
-                    <p className={`text-2xl font-bold ${result.profitPerAcre >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    <p className={`text-2xl font-bold ${result.profitPerAcre >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
                       Rs {result.profitPerAcre.toLocaleString("en-IN")}
                     </p>
                   </div>
                 </div>
                 <div className="mt-3 text-center">
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground dark:text-emerald-100/80">
                     {t("profit.profitRange")} Rs {result.profitRange.low.toLocaleString("en-IN")} {t("profit.to")} Rs {result.profitRange.high.toLocaleString("en-IN")} {t("profit.perAcre")}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground dark:text-emerald-100/80 mt-0.5">
                     {t("profit.for")} {acreage} {t("profit.acres")} Rs {(result.profitPerAcre * parseFloat(acreage)).toLocaleString("en-IN")} {t("profit.totalEst")}
                   </p>
-                  <Badge variant="outline" className="mt-2 text-xs">
+                  <Badge variant="outline" className="mt-2 text-xs dark:bg-emerald-900/40 dark:border-emerald-700 dark:text-emerald-100">
                     {Math.round(result.confidenceScore * 100)}% {t("profit.modelConf")}
                   </Badge>
                 </div>

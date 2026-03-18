@@ -28,7 +28,7 @@ export interface DiseaseRiskInput {
 
 export interface DiseaseRiskResult {
   riskPercentage: number;
-  riskLevel: "Low" | "Medium" | "High";
+  riskLevel: "Low" | "Medium" | "High" | string;
   topDiseases: { name: string; probability: number }[];
   factors: { factor: string; impact: "Positive" | "Negative"; detail: string }[];
   recommendation: string;
@@ -152,9 +152,9 @@ export interface PestOutbreakInput {
 
 export interface PestOutbreakResult {
   outbreakProbability: number;
-  riskZone: "Low" | "Moderate" | "High";
+  riskZone: "Low" | "Moderate" | "High" | string;
   affectedCrops: { crop: string; riskPercent: number; pest: string }[];
-  districtAlerts: { district: string; level: "Low" | "Moderate" | "High"; pest: string }[];
+  districtAlerts: { district: string; level: "Low" | "Moderate" | "High" | string; pest: string }[];
   preventiveAdvisory: string[];
   historicalComparison: string;
 }
@@ -289,6 +289,7 @@ export interface ChatbotInput {
   cropType?: string;
   region?: string;
   season?: string;
+  language?: string;
   history?: ChatMessage[];
 }
 

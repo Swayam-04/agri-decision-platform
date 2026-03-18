@@ -24,7 +24,7 @@ export default function App() {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      text: "Namaste! I’m KisanBot. Tap the mic and ask a crop-related question.",
+      text: t("voice.greeting"),
       at: Date.now(),
     },
   ]);
@@ -54,9 +54,9 @@ export default function App() {
           {
             role: "assistant",
             text:
-              "Sorry — I couldn’t get an answer right now." +
+              t("voice.error") +
               (msg ? `\n\nError: ${msg}` : "") +
-              "\n\nTip: Check your GROQ_API_KEY and model settings, then restart the dev server.",
+              "\n\n" + t("voice.tip"),
             at: Date.now(),
           },
         ]);
@@ -159,7 +159,7 @@ export default function App() {
 
           {loading && (
             <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-muted text-foreground mr-auto">
-              <div className="text-sm">Thinking…</div>
+              <div className="text-sm">{t("voice.thinking")}</div>
             </div>
           )}
         </div>

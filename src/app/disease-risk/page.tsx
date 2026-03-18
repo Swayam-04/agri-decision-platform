@@ -13,7 +13,7 @@ import { ShieldAlert, Loader2, Thermometer, Droplets, CloudRain, TrendingUp, Tre
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function DiseaseRiskPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [cropType, setCropType] = useState("Rice");
   const [region, setRegion] = useState("Punjab");
   const [season, setSeason] = useState("Kharif");
@@ -28,7 +28,7 @@ export default function DiseaseRiskPage() {
     try {
       const res = await fetch("/api/disease-risk", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({
           cropType, region, season,
           temperature: parseFloat(temperature),
@@ -76,7 +76,24 @@ export default function DiseaseRiskPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-[#3d1f0a]">Crop</label>
+              <label className="text-sm font-semibold text-[#3d1f0a]">{t("dashboard.crop")}</label>
+              <div className="flex flex-wrap gap-2">
+                {CROP_LIST.slice(0, 6).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCropType(c)}
+                    className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-[14px] font-medium transition-all border-2 ${
+                      cropType === c
+                        ? "bg-[#16a34a] text-[#fdf6e3] border-[#16a34a]"
+                        : "bg-[#faf4e8] text-[#3d1f0a] border-[rgba(61,31,10,0.15)] hover:border-[#16a34a]/50"
+                    }`}
+                  >
+                    <span>{cropEmoji[c] || "🌱"}</span>
+                    {t(`crops.${c}`)}
+                  </button>
+                ))}
+              </div>
               <Select value={cropType} onValueChange={setCropType}>
                 <SelectTrigger className="h-12 rounded-[20px] bg-[#faf4e8] border-2 border-[rgba(61,31,10,0.15)] text-[#3d1f0a] text-[15px] focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/30">
                   <SelectValue />
@@ -88,7 +105,7 @@ export default function DiseaseRiskPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-[#3d1f0a]">Region</label>
+              <label className="text-sm font-semibold text-[#3d1f0a]">{t("dashboard.region")}</label>
               <Select value={region} onValueChange={setRegion}>
                 <SelectTrigger className="h-12 rounded-[20px] bg-[#faf4e8] border-2 border-[rgba(61,31,10,0.15)] text-[#3d1f0a] text-[15px] focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/30">
                   <SelectValue />
@@ -100,7 +117,7 @@ export default function DiseaseRiskPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-[#3d1f0a]">Season</label>
+              <label className="text-sm font-semibold text-[#3d1f0a]">{t("dashboard.season")}</label>
               <Select value={season} onValueChange={setSeason}>
                 <SelectTrigger className="h-12 rounded-[20px] bg-[#faf4e8] border-2 border-[rgba(61,31,10,0.15)] text-[#3d1f0a] text-[15px] focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/30">
                   <SelectValue />

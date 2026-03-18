@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useTheme } from "@/hooks/useTheme";
 import {
   Microscope,
   ShieldAlert,
@@ -90,8 +91,8 @@ function LanguageDropdown() {
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-2xl border border-[rgba(61,31,10,0.2)] bg-[#fdf6e3] shadow-md">
-          <ul className="max-h-60 overflow-auto py-1">
+        <div className="absolute z-50 mt-1 w-full rounded-2xl border border-[rgba(61,31,10,0.2)] bg-[#fdf6e3] shadow-md overflow-hidden animate-in fade-in zoom-in duration-200">
+          <ul className="max-h-60 overflow-y-auto py-1 scrollbar-earth">
             {languages.map((lang) => {
               const active = lang.code === language;
               return (
@@ -185,18 +186,44 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-[rgba(61,31,10,0.12)] px-5 py-4 space-y-2">
-          <div className="rounded-[20px] border border-[rgba(22,163,74,0.25)] bg-[#f5ebd9] px-3 py-2.5">
-            <p className="text-xs font-semibold text-[#3d1f0a] tracking-wide flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[#16a34a]" />
-              {t("common.demoMode")}
-            </p>
-            <p className="text-[11px] text-[#6b4423] mt-0.5">
-              {t("sidebar.demoDesc")}
-            </p>
+        <div className="border-t border-[rgba(61,31,10,0.12)] px-5 py-4 flex flex-col gap-3">
+          <ThemeToggle />
+          <div className="flex items-center justify-center">
+            <p className="text-xs font-semibold text-[#6b4423]">{t("sidebar.madeWith")}</p>
           </div>
         </div>
       </div>
     </aside>
+  );
+}
+
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
+
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className="w-full flex items-center justify-between rounded-full border border-[rgba(61,31,10,0.2)] bg-[#f5ebd9] px-3 py-1.5 text-[13px] font-semibold text-[#3d1f0a] hover:bg-[#e8dcc8] transition-colors"
+    >
+      <span className="flex items-center gap-2">
+        <span className="text-sm">
+          {theme === "night" ? "☀️" : "🌙"}
+        </span>
+        <span>
+          {theme === "night" ? t("dashboard.dayMode") : t("dashboard.nightMode")}
+        </span>
+      </span>
+      <div className={cn(
+        "h-4 w-8 rounded-full bg-[#6b4423]/20 relative transition-colors",
+        theme === "night" && "bg-[#16a34a]/40"
+      )}>
+        <div className={cn(
+          "absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform",
+          theme === "night" && "translate-x-4"
+        )} />
+      </div>
+    </button>
   );
 }

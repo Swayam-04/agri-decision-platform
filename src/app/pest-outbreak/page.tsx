@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function PestOutbreakPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [region, setRegion] = useState("Punjab");
   const [season, setSeason] = useState("Kharif");
   const [temperature, setTemperature] = useState(30);
@@ -27,7 +27,7 @@ export default function PestOutbreakPage() {
     try {
       const res = await fetch("/api/pest-outbreak", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({ region, season, temperature, humidity, recentRainfall: rainfall }),
       });
       setResult(await res.json());
@@ -107,7 +107,7 @@ export default function PestOutbreakPage() {
               <CardContent className="pt-5 pb-5 text-center">
                 <ShieldAlert className="h-7 w-7 mx-auto text-red-500 mb-2" />
                 <Badge className={`text-sm px-3 py-1 ${zoneColors[result.riskZone]}`}>
-                  {result.riskZone} {t("pest.riskZone")}
+                  {t(`common.status.${result.riskZone}`)} {t("pest.riskZone")}
                 </Badge>
                 <p className="text-xs text-muted-foreground mt-2">{t("pest.regClass")}</p>
               </CardContent>
@@ -161,7 +161,7 @@ export default function PestOutbreakPage() {
                     <div key={i} className="flex items-center justify-between text-xs py-2 border-b last:border-0">
                       <span className="font-medium">{alert.district}</span>
                       <span className="text-muted-foreground">{alert.pest}</span>
-                      <Badge className={`text-[10px] ${zoneColors[alert.level]}`}>{alert.level}</Badge>
+                      <Badge className={`text-[10px] ${zoneColors[alert.level]}`}>{t(`common.status.${alert.level}`)}</Badge>
                     </div>
                   ))}
                 </div>

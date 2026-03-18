@@ -44,7 +44,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<FullResults | null>(null);
   const { theme, toggleTheme } = useTheme();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   async function runFullAnalysis() {
     setLoading(true);
@@ -52,37 +52,37 @@ export default function DashboardPage() {
       const [diseaseRiskRes, profitRes, priceRes, advisoryRes, irrigationRes, pestRes, smsRes] = await Promise.all([
         fetch("/api/disease-risk", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-language": language },
           body: JSON.stringify({ cropType, region, temperature: 30, humidity: 78, rainfall: 15, season }),
         }),
         fetch("/api/profit-predict", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-language": language },
           body: JSON.stringify({ cropType, region, acreage: 5, season, irrigationType: "Canal", soilType: "Alluvial" }),
         }),
         fetch("/api/price-forecast", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-language": language },
           body: JSON.stringify({ cropType, region, currentPrice: 2500, quantityQuintals: 50, storageCostPerDay: 5 }),
         }),
         fetch("/api/risk-advisory", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-language": language },
           body: JSON.stringify({ region, season }),
         }),
         fetch("/api/irrigation", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-language": language },
           body: JSON.stringify({ cropType, region, soilType: "Alluvial", temperature: 30, humidity: 78, recentRainfall: 15, season }),
         }),
         fetch("/api/pest-outbreak", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-language": language },
           body: JSON.stringify({ region, season, temperature: 30, humidity: 78, recentRainfall: 15 }),
         }),
         fetch("/api/sms-alerts", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-language": language },
           body: JSON.stringify({ cropType, region, season }),
         }),
       ]);
@@ -134,7 +134,7 @@ export default function DashboardPage() {
                 {theme === "night" ? "☀️" : "🌙"}
               </span>
               <span className="hero-toggle-label">
-                {theme === "night" ? "Day Mode" : "Night Mode"}
+                {theme === "night" ? t("dashboard.dayMode") : t("dashboard.nightMode")}
               </span>
             </button>
           </div>
@@ -316,7 +316,7 @@ export default function DashboardPage() {
                       {t("dashboard.sellStore")}
                     </CardTitle>
                     <Badge className={results.priceForecast.decision === "Sell Now" ? "bg-[#b91c1c]/15 text-[#b91c1c] border-[#b91c1c]/30" : "bg-[#16a34a]/15 text-[#16a34a] border-[#16a34a]/30"}>
-                      {results.priceForecast.decision === "Store" ? t("price.riskLow") : t("price.sellNow")}
+                      {results.priceForecast.decision === "Store" ? t("dashboard.store") : t("price.sellNow")}
                     </Badge>
                   </div>
                 </CardHeader>

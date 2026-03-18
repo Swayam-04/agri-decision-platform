@@ -17,7 +17,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 type ActiveTab = "trigger" | "send" | "history" | "monitor";
 
 export default function SmsAlertsPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [activeTab, setActiveTab] = useState<ActiveTab>("trigger");
 
   // Trigger form state
@@ -49,7 +49,7 @@ export default function SmsAlertsPage() {
     try {
       const res = await fetch("/api/sms-alerts/trigger", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({
           cropType, region, season, farmerPhone: phone,
           temperature: parseFloat(temperature),
@@ -69,7 +69,7 @@ export default function SmsAlertsPage() {
     try {
       const res = await fetch("/api/sms-alerts/send", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({
           phone: sendPhone, message: sendMessage, priority: sendPriority,
           triggerEvent: "Manual", cropType, region, season,
@@ -84,7 +84,9 @@ export default function SmsAlertsPage() {
   async function fetchHistory() {
     setLoading(true);
     try {
-      const res = await fetch("/api/sms-alerts/history");
+      const res = await fetch("/api/sms-alerts/history", {
+        headers: { "x-language": language },
+      });
       setHistoryResult(await res.json());
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -94,7 +96,10 @@ export default function SmsAlertsPage() {
   async function handleRetry() {
     setLoading(true);
     try {
-      const res = await fetch("/api/sms-alerts/retry", { method: "POST" });
+      const res = await fetch("/api/sms-alerts/retry", {
+        method: "POST",
+        headers: { "x-language": language },
+      });
       setRetryResult(await res.json());
       fetchHistory();
     } catch (err) { console.error(err); }
@@ -156,10 +161,10 @@ export default function SmsAlertsPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Zap className="h-4 w-4 text-amber-500" />
-                Event-Based Alert Engine
+                {t("sms.eventEngineTitle")}
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Evaluates AI outputs against thresholds and sends SMS for triggered events. Includes deduplication (30-min window).
+                {t("sms.eventEngineDesc")}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -287,7 +292,7 @@ export default function SmsAlertsPage() {
                   <CardContent>
                     <div className="space-y-3">
                       {triggerResult.triggeredAlerts.map((alert) => (
-                        <AlertLogCard key={alert.id} entry={alert} statusColors={statusColors} priorityColors={priorityColors} />
+                        <AlertLogCard key={alert.id} entry={alert} statusColors={statusColors} priorityColors={priorityColors} t={t} />
                       ))}
                     </div>
                   </CardContent>
@@ -308,7 +313,7 @@ export default function SmsAlertsPage() {
                 {t("sms.sendManual")}
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Send a single SMS with full validation, delivery tracking, and retry on failure.
+                {t("sms.manualSendDesc")}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -333,7 +338,7 @@ export default function SmsAlertsPage() {
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-muted-foreground">{t("sms.message")}</label>
                   <span className={`text-xs ${sendMessage.length > 160 ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
-                    {sendMessage.length}/160
+                    {sendMessage.length}/160 {t("common.chars")}
                   </span>
                 </div>
                 <textarea
@@ -366,7 +371,7 @@ export default function SmsAlertsPage() {
                     </ul>
                   </div>
                 )}
-                <AlertLogCard entry={sendResult.logEntry} statusColors={statusColors} priorityColors={priorityColors} />
+                <AlertLogCard entry={sendResult.logEntry} statusColors={statusColors} priorityColors={priorityColors} t={t} />
               </CardContent>
             </Card>
           )}
@@ -424,7 +429,7 @@ export default function SmsAlertsPage() {
                 </CardContent></Card>
                 <Card><CardContent className="pt-4 pb-4 text-center">
                   <div className="text-xl font-bold text-amber-600">{historyResult.stats.avgRetries}</div>
-                  <p className="text-xs text-muted-foreground">Avg Retries</p>
+                  <p className="text-xs text-muted-foreground">{t("sms.avgRetries")}</p>
                 </CardContent></Card>
               </div>
 
@@ -432,18 +437,18 @@ export default function SmsAlertsPage() {
                 <Card>
                   <CardContent className="pt-8 pb-8 text-center text-muted-foreground">
                     <MessageSquare className="h-8 w-8 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">No alert history yet. Use the Event Trigger or Manual SMS tab to send alerts.</p>
+                    <p className="text-sm">{t("sms.noHistory")}</p>
                   </CardContent>
                 </Card>
               ) : (
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Alert Log ({historyResult.logs.length} entries)</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t("sms.alertLogTitle")} ({historyResult.logs.length} {t("common.entries")})</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       {historyResult.logs.map((entry) => (
-                        <AlertLogCard key={entry.id} entry={entry} statusColors={statusColors} priorityColors={priorityColors} />
+                        <AlertLogCard key={entry.id} entry={entry} statusColors={statusColors} priorityColors={priorityColors} t={t} />
                       ))}
                     </div>
                   </CardContent>
@@ -464,37 +469,37 @@ export default function SmsAlertsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Gateway Config */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-indigo-500" />
-                  Gateway Configuration
-                </CardTitle>
-              </CardHeader>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-indigo-500" />
+                    {t("sms.gatewayConfigTitle")}
+                  </CardTitle>
+                </CardHeader>
               <CardContent className="space-y-3">
                 <div className="border rounded-lg p-3 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Active Provider</span>
-                    <Badge className="bg-emerald-100 text-emerald-700">MOCK (Simulated)</Badge>
+                    <span className="text-muted-foreground">{t("sms.activeProvider")}</span>
+                    <Badge className="bg-emerald-100 text-emerald-700">{t("sms.providerMock")}</Badge>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Sender ID</span>
+                    <span className="text-muted-foreground">{t("sms.senderId")}</span>
                     <span className="font-mono text-xs">CROPAI</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Max Retries</span>
+                    <span className="text-muted-foreground">{t("sms.maxRetries")}</span>
                     <span>3</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Retry Delays</span>
+                    <span className="text-muted-foreground">{t("sms.retryDelays")}</span>
                     <span className="text-xs">5s → 15s → 30s</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Dedup Window</span>
-                    <span>30 min</span>
+                    <span className="text-muted-foreground">{t("sms.dedupWindow")}</span>
+                    <span>30 {t("common.min")}</span>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Set <code className="bg-muted px-1 rounded">TWILIO_ACCOUNT_SID</code> / <code className="bg-muted px-1 rounded">TWILIO_AUTH_TOKEN</code> env vars to switch to Twilio live gateway.
+                  {t("sms.envVarTip")}
                 </p>
               </CardContent>
             </Card>
@@ -504,7 +509,7 @@ export default function SmsAlertsPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  Active Trigger Thresholds
+                  {t("sms.activeThresholds")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -532,18 +537,18 @@ export default function SmsAlertsPage() {
           {/* Delivery Pipeline Diagram */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">SMS Delivery Pipeline</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("sms.deliveryPipeline")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2">
                 {[
-                  { label: "AI Output", sub: "Disease/Pest/Moisture", color: "bg-blue-100 text-blue-700 border-blue-200" },
-                  { label: "Threshold Check", sub: "Compare vs limits", color: "bg-amber-100 text-amber-700 border-amber-200" },
-                  { label: "Deduplication", sub: "30-min window", color: "bg-purple-100 text-purple-700 border-purple-200" },
-                  { label: "Phone Validate", sub: "+CC format check", color: "bg-indigo-100 text-indigo-700 border-indigo-200" },
-                  { label: "Gateway Send", sub: "Twilio/Govt/Mock", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-                  { label: "Retry (3x)", sub: "5s→15s→30s delay", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-                  { label: "Log & Monitor", sub: "Full audit trail", color: "bg-gray-100 text-gray-700 border-gray-200" },
+                  { label: t("sms.pipeline.aiOutput"), sub: t("sms.pipeline.aiOutputSub"), color: "bg-blue-100 text-blue-700 border-blue-200" },
+                  { label: t("sms.pipeline.threshold"), sub: t("sms.pipeline.thresholdSub"), color: "bg-amber-100 text-amber-700 border-amber-200" },
+                  { label: t("sms.pipeline.dedup"), sub: t("sms.pipeline.dedupSub"), color: "bg-purple-100 text-purple-700 border-purple-200" },
+                  { label: t("sms.pipeline.validate"), sub: t("sms.pipeline.validateSub"), color: "bg-indigo-100 text-indigo-700 border-indigo-200" },
+                  { label: t("sms.pipeline.gateway"), sub: t("sms.pipeline.gatewaySub"), color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+                  { label: t("sms.pipeline.retry"), sub: t("sms.pipeline.retrySub"), color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+                  { label: t("sms.pipeline.log"), sub: t("sms.pipeline.logSub"), color: "bg-gray-100 text-gray-700 border-gray-200" },
                 ].map((step, i) => (
                   <div key={i} className="flex items-center gap-2 flex-shrink-0">
                     <div className={`border rounded-lg p-2.5 text-center min-w-[100px] ${step.color}`}>
@@ -561,25 +566,25 @@ export default function SmsAlertsPage() {
           {historyResult && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Live System Stats</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("sms.liveSystemStats")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="text-center p-3 border rounded-lg">
                     <div className="text-xl font-bold">{historyResult.stats.total}</div>
-                    <p className="text-xs text-muted-foreground">Total Sent</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.totalSentLabel")}</p>
                   </div>
                   <div className="text-center p-3 border rounded-lg border-emerald-200 bg-emerald-50/50">
                     <div className="text-xl font-bold text-emerald-600">{historyResult.stats.delivered}</div>
-                    <p className="text-xs text-muted-foreground">Delivered</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.deliveredLabel")}</p>
                   </div>
                   <div className="text-center p-3 border rounded-lg border-red-200 bg-red-50/50">
                     <div className="text-xl font-bold text-red-600">{historyResult.stats.failed}</div>
-                    <p className="text-xs text-muted-foreground">Failed</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.failedLabel")}</p>
                   </div>
                   <div className="text-center p-3 border rounded-lg border-yellow-200 bg-yellow-50/50">
                     <div className="text-xl font-bold text-yellow-600">{historyResult.stats.retrying}</div>
-                    <p className="text-xs text-muted-foreground">Retrying</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.retryingLabel")}</p>
                   </div>
                   <div className="text-center p-3 border rounded-lg border-blue-200 bg-blue-50/50">
                     <div className="text-xl font-bold text-blue-600">{historyResult.stats.deliveryRate}%</div>
@@ -601,10 +606,12 @@ function AlertLogCard({
   entry,
   statusColors,
   priorityColors,
+  t,
 }: {
   entry: SmsLogEntry;
   statusColors: Record<string, string>;
   priorityColors: Record<string, string>;
+  t: (key: string) => string;
 }) {
   return (
     <div className="border rounded-lg p-4 space-y-2.5">
@@ -618,10 +625,10 @@ function AlertLogCard({
             {entry.status === "delivered" && <CheckCircle2 className="h-3 w-3 mr-1" />}
             {entry.status === "failed" && <XCircle className="h-3 w-3 mr-1" />}
             {entry.status === "retrying" && <RefreshCw className="h-3 w-3 mr-1" />}
-            {entry.status.toUpperCase()}
+            {t(`common.status.${entry.status === "sent" ? "Normal" : entry.status === "delivered" ? "Normal" : entry.status === "failed" ? "Critical" : entry.status === "queued" ? "Normal" : entry.status}`)}
           </Badge>
           {entry.retryCount > 0 && (
-            <span className="text-[10px] text-muted-foreground">Retries: {entry.retryCount}/{entry.maxRetries}</span>
+            <span className="text-[10px] text-muted-foreground">{t("sms.maxRetries")}: {entry.retryCount}/{entry.maxRetries}</span>
           )}
         </div>
       </div>
@@ -629,15 +636,15 @@ function AlertLogCard({
       <div className="bg-muted/50 rounded-lg p-3">
         <p className="text-sm font-mono">{entry.message}</p>
         <p className={`text-[10px] mt-1 ${entry.message.length > 160 ? "text-red-500" : "text-muted-foreground"}`}>
-          {entry.message.length}/160 chars
+          {entry.message.length}/160 {t("common.chars")}
         </p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px] text-muted-foreground">
-        <div><span className="font-medium">Phone:</span> {entry.phone}</div>
-        <div><span className="font-medium">Gateway:</span> {entry.gatewayProvider}</div>
-        <div><span className="font-medium">Crop:</span> {entry.cropType}</div>
-        <div><span className="font-medium">Region:</span> {entry.region}</div>
+        <div><span className="font-medium">{t("sms.phoneLabel")}</span> {entry.phone}</div>
+        <div><span className="font-medium">{t("sms.gatewayLabel")}</span> {entry.gatewayProvider}</div>
+        <div><span className="font-medium">{t("sms.cropLabel")}</span> {t(`crops.${entry.cropType}`)}</div>
+        <div><span className="font-medium">{t("sms.regionLabel")}</span> {t(`regions.${entry.region}`)}</div>
       </div>
 
       {entry.errorMessage && (
@@ -653,7 +660,7 @@ function AlertLogCard({
       )}
 
       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>ID: {entry.id}</span>
+        <span>{t("sms.idLabel")} {entry.id}</span>
         <span>{new Date(entry.timestamp).toLocaleString()}</span>
       </div>
     </div>

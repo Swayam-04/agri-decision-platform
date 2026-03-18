@@ -24,17 +24,25 @@ function extractGroqText(data: any): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GROQ_API_KEY;
+    const groqKey = process.env.GROQ_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    
+    // Default to OpenAI if key provided, else Groq
+    const useOpenAI = !!openaiKey;
+    const apiKey = useOpenAI ? openaiKey : groqKey;
+    const apiUrl = useOpenAI ? "https://api.openai.com/v1/chat/completions" : "https://api.groq.com/openai/v1/chat/completions";
+    const model = useOpenAI ? "gpt-4o-mini" : "llama-3.3-70b-versatile";
+
     if (!apiKey) {
       return NextResponse.json(
-        { error: "Missing GROQ_API_KEY environment variable" },
+        { error: "Missing GROQ_API_KEY or OPENAI_API_KEY environment variable" },
         { status: 500 },
       );
     }
 
     const body = await req.json();
     const text = String(body?.text ?? "").trim();
-    const lang = String(body?.lang ?? "en-IN");
+    const lang = String(body?.lang ?? "hi-IN"); // testing default
     const languageLabel = String(body?.languageLabel ?? "");
 
     if (!text) {
@@ -46,14 +54,14 @@ export async function POST(req: NextRequest) {
       `If the question is not about crops/farming, refuse briefly.\n\n` +
       `Question: ${text}`;
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const apiRes = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: model,
         max_tokens: 300,
         temperature: 0.4,
         messages: [
@@ -63,15 +71,15 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    if (!groqRes.ok) {
-      const errText = await groqRes.text().catch(() => "");
+    if (!apiRes.ok) {
+      const errText = await apiRes.text().catch(() => "");
       return NextResponse.json(
-        { error: "Groq API error", details: errText || groqRes.statusText },
+        { error: "API error", details: errText || apiRes.statusText },
         { status: 502 },
       );
     }
 
-    const data = await groqRes.json();
+    const data = await apiRes.json();
     const reply = extractGroqText(data) || "Sorry, I couldn’t generate an answer.";
     return NextResponse.json({ reply });
   } catch {
