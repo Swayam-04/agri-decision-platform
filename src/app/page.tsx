@@ -24,6 +24,8 @@ import {
   Power,
 } from "lucide-react";
 import Link from "next/link";
+import { useTheme } from "@/hooks/useTheme";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface FullResults {
   diseaseRisk: DiseaseRiskResult | null;
@@ -41,6 +43,8 @@ export default function DashboardPage() {
   const [season, setSeason] = useState("Kharif");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<FullResults | null>(null);
+  const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
 
   async function runFullAnalysis() {
     setLoading(true);
@@ -99,52 +103,137 @@ export default function DashboardPage() {
     }
   }
 
+  const cropEmoji: Record<string, string> = { Rice: "🌾", Wheat: "🌾", Maize: "🌽", Cotton: "☁️", Sugarcane: "🎋", Soybean: "🫘", Groundnut: "🥜", Chickpea: "🫘", Pigeonpea: "🫘", Mungbean: "🫘" };
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Decision Intelligence Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Unified AI analysis: disease, profit, irrigation, pest, market advice, and SMS alerts in one view.
-        </p>
+    <div className={`dashboard-root ${theme} p-6 w-full space-y-6 relative min-h-screen`}>
+      {/* Hero: farm scene */}
+      <div className="relative rounded-[28px] overflow-hidden border border-[rgba(61,31,10,0.1)] shadow-lg hero-shell">
+        <div className="h-44 sm:h-52 hero-bg flex items-center transition-all duration-1000 ease-in-out">
+          <div className="hero-orb-wrapper">
+            <div className="hero-sun sun-with-rays">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <span key={i} className={`sun-ray sun-ray-${i}`} />
+              ))}
+            </div>
+            <div className="hero-moon">
+              <div className="moon-main" />
+              <div className="moon-cutout" />
+            </div>
+            <div className="hero-stars">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <span key={i} className={`star-dot star-dot-${i}`} />
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="hero-toggle"
+            >
+              <span className="hero-toggle-icon">
+                {theme === "night" ? "☀️" : "🌙"}
+              </span>
+              <span className="hero-toggle-label">
+                {theme === "night" ? "Day Mode" : "Night Mode"}
+              </span>
+            </button>
+          </div>
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 800 200" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#fef9e3" /><stop offset="100%" stopColor="#f5ebd9" /></linearGradient>
+              <linearGradient id="hill1" x1="0%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stopColor="#16a34a" stopOpacity="0.4" /><stop offset="100%" stopColor="#16a34a" stopOpacity="0.1" /></linearGradient>
+              <linearGradient id="hill2" x1="0%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stopColor="#6b4423" stopOpacity="0.25" /><stop offset="100%" stopColor="#6b4423" stopOpacity="0.05" /></linearGradient>
+            </defs>
+            <path d="M0 200 Q200 120 400 140 T800 100 L800 200 Z" fill="url(#hill1)" />
+            <path d="M0 200 Q300 140 600 160 T800 120 L800 200 Z" fill="url(#hill2)" />
+            <text x="400" y="170" textAnchor="middle" fill="rgba(61,31,10,0.08)" fontSize="72" fontFamily="'Playfair Display', serif" fontWeight="700">🌾 🌽 🌾</text>
+          </svg>
+          <div className="relative z-10 w-full px-6 pb-6 pt-4 text-center flex flex-col items-center">
+            <h1 className="text-4xl sm:text-5xl font-bold text-[#3d1f0a] tracking-tight" style={{ fontFamily: "'Playfair Display', serif", letterSpacing: "0.3px" }}>
+              {t("dashboard.title")}
+            </h1>
+            <p className="text-[#6b4423] text-base sm:text-lg mt-1 max-w-xl">
+              {t("dashboard.subtitle")}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Quick Analysis Form */}
-      <Card>
+      <Card className="card-earth rounded-[24px] overflow-hidden">
         <CardContent className="pt-6">
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Crop</label>
+          <div className="flex flex-wrap items-end gap-5">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[#3d1f0a]">
+                {t("dashboard.crop")}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {CROP_LIST.slice(0, 6).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCropType(c)}
+                    className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-[15px] font-medium transition-all border-2 ${
+                      cropType === c
+                        ? "bg-[#16a34a] text-[#fdf6e3] border-[#16a34a]"
+                        : "bg-[#faf4e8] text-[#3d1f0a] border-[rgba(61,31,10,0.15)] hover:border-[#16a34a]/50"
+                    }`}
+                  >
+                    <span>{cropEmoji[c] || "🌱"}</span>
+                    {t(`crops.${c}`)}
+                  </button>
+                ))}
+              </div>
               <Select value={cropType} onValueChange={setCropType}>
-                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-[200px] h-12 rounded-[20px] bg-[#faf4e8] border-2 border-[rgba(61,31,10,0.15)] text-[#3d1f0a] text-[15px] focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/30 mt-2">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {CROP_LIST.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  {CROP_LIST.map((c) => <SelectItem key={c} value={c}><span className="mr-2">{cropEmoji[c] || "🌱"}</span>{t(`crops.${c}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Region</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[#3d1f0a]">
+                {t("dashboard.region")}
+              </label>
               <Select value={region} onValueChange={setRegion}>
-                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-[200px] h-12 rounded-[20px] bg-[#faf4e8] border-2 border-[rgba(61,31,10,0.15)] text-[#3d1f0a] text-[15px] focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/30">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {REGION_LIST.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  {REGION_LIST.map((r) => <SelectItem key={r} value={r}>{t(`regions.${r}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Season</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[#3d1f0a]">
+                {t("dashboard.season")}
+              </label>
               <Select value={season} onValueChange={setSeason}>
-                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-[180px] h-12 rounded-[20px] bg-[#faf4e8] border-2 border-[rgba(61,31,10,0.15)] text-[#3d1f0a] text-[15px] focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/30">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{t(`seasons.${s}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="mt-6">
             <Button
               onClick={runFullAnalysis}
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="h-14 w-full rounded-[24px] bg-[#16a34a] hover:bg-[#15803d] text-[#fdf6e3] font-bold text-[17px] shadow-md"
             >
-              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Analyzing All Modules...</> : "Run Full Analysis"}
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  {t("dashboard.analyzing")}
+                </>
+              ) : (
+                t("dashboard.runAnalysis")
+              )}
             </Button>
           </div>
         </CardContent>
@@ -152,15 +241,15 @@ export default function DashboardPage() {
 
       {/* Quick Links when no results */}
       {!results && !loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <QuickLinkCard icon={<ShieldAlert className="h-5 w-5 text-orange-500" />} title="Disease Risk Forecast" description="Predict disease probability for the next 7-10 days" href="/disease-risk" />
-          <QuickLinkCard icon={<TrendingUp className="h-5 w-5 text-blue-500" />} title="Profit Per Acre" description="Estimate yield, market price, costs, and profit range" href="/profit-predict" />
-          <QuickLinkCard icon={<Store className="h-5 w-5 text-purple-500" />} title="Sell or Store Decision" description="AI-powered price forecasts and sell/store advice" href="/price-forecast" />
-          <QuickLinkCard icon={<AlertTriangle className="h-5 w-5 text-red-500" />} title="Crop Risk Advisory" description="Find out which crops to avoid this season" href="/risk-advisory" />
-          <QuickLinkCard icon={<Droplets className="h-5 w-5 text-blue-500" />} title="Smart Irrigation" description="Soil moisture prediction and pump automation" href="/irrigation" />
-          <QuickLinkCard icon={<Bug className="h-5 w-5 text-orange-500" />} title="Pest Outbreak" description="Regional pest forecasting with district alerts" href="/pest-outbreak" />
-          <QuickLinkCard icon={<MessageSquare className="h-5 w-5 text-emerald-500" />} title="SMS Alerts" description="Event-based alerts for low-end device farmers" href="/sms-alerts" />
-          <QuickLinkCard icon={<Bot className="h-5 w-5 text-violet-500" />} title="AI Assistant" description="Chat with AI about your farm in simple language" href="/chatbot" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <QuickLinkCard icon={<ShieldAlert className="h-6 w-6 text-[#16a34a]" />} title={t("card.diseaseRisk.title")} description={t("card.diseaseRisk.desc")} href="/disease-risk" watermark="🌾" />
+          <QuickLinkCard icon={<TrendingUp className="h-6 w-6 text-[#16a34a]" />} title={t("card.profitPredict.title")} description={t("card.profitPredict.desc")} href="/profit-predict" watermark="🌽" />
+          <QuickLinkCard icon={<Store className="h-6 w-6 text-[#f59e0b]" />} title={t("card.sellStore.title")} description={t("card.sellStore.desc")} href="/price-forecast" watermark="🌾" />
+          <QuickLinkCard icon={<AlertTriangle className="h-6 w-6 text-[#b91c1c]" />} title={t("card.cropAdvisory.title")} description={t("card.cropAdvisory.desc")} href="/risk-advisory" watermark="🌱" />
+          <QuickLinkCard icon={<Droplets className="h-6 w-6 text-[#16a34a]" />} title={t("card.smartIrrigation.title")} description={t("card.smartIrrigation.desc")} href="/irrigation" watermark="💧" />
+          <QuickLinkCard icon={<Bug className="h-6 w-6 text-[#6b4423]" />} title={t("card.pestOutbreak.title")} description={t("card.pestOutbreak.desc")} href="/pest-outbreak" watermark="🌽" />
+          <QuickLinkCard icon={<MessageSquare className="h-6 w-6 text-[#16a34a]" />} title={t("card.smsAlerts.title")} description={t("card.smsAlerts.desc")} href="/sms-alerts" watermark="📱" />
+          <QuickLinkCard icon={<Bot className="h-6 w-6 text-[#f59e0b]" />} title={t("card.aiAssistant.title")} description={t("card.aiAssistant.desc")} href="/chatbot" watermark="🌾" />
         </div>
       )}
 
@@ -171,28 +260,36 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Disease Risk */}
             {results.diseaseRisk && (
-              <Card className="border-l-4 border-l-orange-400">
+              <Card className="card-earth rounded-[24px] relative overflow-hidden">
+                <span className="absolute right-4 top-4 text-7xl opacity-[0.08] pointer-events-none">🌾</span>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <ShieldAlert className="h-4 w-4 text-orange-500" />
-                      Disease Risk
+                    <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[#3d1f0a]">
+                      <ShieldAlert className="h-4 w-4 text-[#16a34a]" />
+                      {t("dashboard.diseaseRisk")}
                     </CardTitle>
                     <RiskBadge level={results.diseaseRisk.riskLevel} />
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="text-3xl font-bold">{results.diseaseRisk.riskPercentage}%</div>
-                    <div className="text-xs text-muted-foreground">next {results.diseaseRisk.forecastDays} days</div>
+                    <div className="text-[48px] leading-none font-bold text-[#3d1f0a] tracking-tight">
+                      {results.diseaseRisk.riskPercentage}%
+                    </div>
+                    <div className="text-[13px] text-[#6b4423]">
+                      {t("dashboard.nextDays").replace("{days}", results.diseaseRisk.forecastDays.toString())}
+                    </div>
+                  </div>
+                  <div className="h-2.5 w-full bg-[#e8dcc8] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#16a34a] rounded-full transition-all duration-700" style={{ width: `${results.diseaseRisk.riskPercentage}%` }} />
                   </div>
                   {results.diseaseRisk.topDiseases.slice(0, 2).map((d) => (
-                    <div key={d.name} className="flex justify-between text-xs">
-                      <span>{d.name}</span><span className="font-medium">{d.probability}%</span>
+                    <div key={d.name} className="flex justify-between text-[13px] text-[#6b4423]">
+                      <span>{d.name}</span><span className="font-bold text-[#3d1f0a]">{d.probability}%</span>
                     </div>
                   ))}
-                  <Link href="/disease-risk" className="text-xs text-emerald-600 hover:underline flex items-center gap-1 pt-1">
-                    Details <ArrowRight className="h-3 w-3" />
+                  <Link href="/disease-risk" className="text-sm text-[#16a34a] hover:underline font-medium flex items-center gap-1 pt-1">
+                    {t("dashboard.details")} <ArrowRight className="h-3 w-3" />
                   </Link>
                 </CardContent>
               </Card>
@@ -200,23 +297,26 @@ export default function DashboardPage() {
 
             {/* Profit */}
             {results.profit && (
-              <Card className="border-l-4 border-l-blue-400">
+              <Card className="card-earth rounded-[24px] relative overflow-hidden">
+                <span className="absolute right-4 top-4 text-7xl opacity-[0.08] pointer-events-none">🌽</span>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-blue-500" />
-                      Profit Estimate
+                    <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[#3d1f0a]">
+                      <TrendingUp className="h-4 w-4 text-[#16a34a]" />
+                      {t("dashboard.profitEstimate")}
                     </CardTitle>
-                    <Badge variant="outline" className="text-xs">{Math.round(results.profit.confidenceScore * 100)}%</Badge>
+                    <Badge className="text-[10px] bg-[#f59e0b]/20 text-[#6b4423] border-[#f59e0b]/40">{Math.round(results.profit.confidenceScore * 100)}%</Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className={`text-3xl font-bold ${results.profit.profitPerAcre >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                <CardContent className="space-y-3">
+                  <div className={`text-[40px] leading-none font-bold ${results.profit.profitPerAcre >= 0 ? "text-[#16a34a]" : "text-[#b91c1c]"}`}>
                     Rs {results.profit.profitPerAcre.toLocaleString("en-IN")}
                   </div>
-                  <div className="text-xs text-muted-foreground">per acre | Range: Rs {results.profit.profitRange.low.toLocaleString("en-IN")} - {results.profit.profitRange.high.toLocaleString("en-IN")}</div>
-                  <Link href="/profit-predict" className="text-xs text-emerald-600 hover:underline flex items-center gap-1 pt-1">
-                    Cost breakdown <ArrowRight className="h-3 w-3" />
+                  <div className="text-[13px] text-[#6b4423]">
+                    {t("dashboard.perAcre")} · {t("dashboard.range")}: Rs {results.profit.profitRange.low.toLocaleString("en-IN")}–{results.profit.profitRange.high.toLocaleString("en-IN")}
+                  </div>
+                  <Link href="/profit-predict" className="text-sm text-[#16a34a] hover:underline font-medium flex items-center gap-1 pt-1">
+                    {t("dashboard.costBreakdown")} <ArrowRight className="h-3 w-3" />
                   </Link>
                 </CardContent>
               </Card>
@@ -224,28 +324,31 @@ export default function DashboardPage() {
 
             {/* Sell/Store */}
             {results.priceForecast && (
-              <Card className="border-l-4 border-l-purple-400">
+              <Card className="card-earth rounded-[24px] relative overflow-hidden">
+                <span className="absolute right-4 top-4 text-7xl opacity-[0.08] pointer-events-none">🌾</span>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Store className="h-4 w-4 text-purple-500" />
-                      Sell / Store
+                    <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[#3d1f0a]">
+                      <Store className="h-4 w-4 text-[#16a34a]" />
+                      {t("dashboard.sellStore")}
                     </CardTitle>
-                    <Badge className={results.priceForecast.decision === "Sell Now" ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}>
-                      {results.priceForecast.decision}
+                    <Badge className={results.priceForecast.decision === "Sell Now" ? "bg-[#b91c1c]/15 text-[#b91c1c] border-[#b91c1c]/30" : "bg-[#16a34a]/15 text-[#16a34a] border-[#16a34a]/30"}>
+                      {results.priceForecast.decision === "Store" ? t("price.riskLow") : t("price.sellNow")}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-3">
                   <div className="flex items-center gap-2">
-                    {results.priceForecast.decision === "Store" ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <XCircle className="h-5 w-5 text-red-500" />}
-                    <span className="text-sm font-medium">
-                      {results.priceForecast.decision === "Store" ? `Store ${results.priceForecast.storeDays} days` : "Sell now"}
+                    {results.priceForecast.decision === "Store" ? <CheckCircle2 className="h-5 w-5 text-[#16a34a]" /> : <XCircle className="h-5 w-5 text-[#b91c1c]" />}
+                    <span className="text-sm font-semibold text-[#3d1f0a]">
+                      {results.priceForecast.decision === "Store" ? t("dashboard.storeDays").replace("{days}", results.priceForecast.storeDays.toString()) : t("dashboard.sellNow")}
                     </span>
                   </div>
-                  <div className="text-xs text-muted-foreground">Trend: {results.priceForecast.priceTrend} | Gain: Rs {results.priceForecast.expectedGainLoss.toLocaleString("en-IN")}</div>
-                  <Link href="/price-forecast" className="text-xs text-emerald-600 hover:underline flex items-center gap-1 pt-1">
-                    Price timeline <ArrowRight className="h-3 w-3" />
+                  <div className="text-[13px] text-[#6b4423]">
+                    {t("dashboard.trend")}: {results.priceForecast.priceTrend === "Rising" ? t("price.rising") : results.priceForecast.priceTrend === "Falling" ? t("price.falling") : t("price.stable")} · {results.priceForecast.expectedGainLoss >= 0 ? t("dashboard.gain") : t("dashboard.loss")}: Rs {Math.abs(results.priceForecast.expectedGainLoss).toLocaleString("en-IN")}
+                  </div>
+                  <Link href="/price-forecast" className="text-sm text-[#16a34a] hover:underline font-medium flex items-center gap-1 pt-1">
+                    {t("dashboard.priceTimeline")} <ArrowRight className="h-3 w-3" />
                   </Link>
                 </CardContent>
               </Card>
@@ -256,37 +359,41 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Irrigation */}
             {results.irrigation && (
-              <Card className="border-l-4 border-l-blue-400">
+              <Card className="card-earth rounded-[24px] relative overflow-hidden">
+                <span className="absolute right-4 top-4 text-7xl opacity-[0.08] pointer-events-none">💧</span>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Droplets className="h-4 w-4 text-blue-500" />
-                      Irrigation
+                    <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[#3d1f0a]">
+                      <Droplets className="h-4 w-4 text-[#16a34a]" />
+                      {t("dashboard.irrigation")}
                     </CardTitle>
                     <Badge className={
-                      results.irrigation.irrigationNeed === "No Irrigation" ? "bg-emerald-100 text-emerald-700" :
-                      results.irrigation.irrigationNeed === "Light Irrigation" ? "bg-yellow-100 text-yellow-700" :
-                      "bg-red-100 text-red-700"
-                    }>{results.irrigation.irrigationNeed}</Badge>
+                      results.irrigation.irrigationNeed === "No Irrigation" ? "bg-[#16a34a]/15 text-[#16a34a] border-[#16a34a]/30" :
+                      results.irrigation.irrigationNeed === "Light Irrigation" ? "bg-[#f59e0b]/20 text-[#6b4423] border-[#f59e0b]/40" :
+                      "bg-[#b91c1c]/15 text-[#b91c1c] border-[#b91c1c]/30"
+                    }>{results.irrigation.irrigationNeed === "No Irrigation" ? t("irrigation.statusNoOption") : results.irrigation.irrigationNeed === "Light Irrigation" ? t("irrigation.statusLightOption") : t("irrigation.statusHeavyOption")}</Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="grid grid-cols-3 gap-2 text-xs text-center">
-                    <div className="bg-muted/50 rounded p-2">
-                      <div className="font-bold text-base">{results.irrigation.soilMoisturePercent}%</div>
-                      <span className="text-muted-foreground">Moisture</span>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2 text-[12px] text-center">
+                    <div className="bg-[#faf4e8] rounded-[16px] p-3 border border-[rgba(61,31,10,0.1)]">
+                      <div className="font-bold text-xl text-[#3d1f0a]">{results.irrigation.soilMoisturePercent}%</div>
+                      <span className="text-[#6b4423]">{t("dashboard.moisture")}</span>
                     </div>
-                    <div className="bg-muted/50 rounded p-2">
-                      <Power className={`h-4 w-4 mx-auto ${results.irrigation.pumpStatus === "ON" ? "text-emerald-500" : "text-gray-400"}`} />
-                      <span className="text-muted-foreground">Pump {results.irrigation.pumpStatus}</span>
+                    <div className="bg-[#faf4e8] rounded-[16px] p-3 border border-[rgba(61,31,10,0.1)]">
+                      <Power className={`h-5 w-5 mx-auto ${results.irrigation.pumpStatus === "ON" ? "text-[#16a34a]" : "text-[#6b4423]"}`} />
+                      <span className="text-[#6b4423]">{t("dashboard.pump")} {results.irrigation.pumpStatus}</span>
                     </div>
-                    <div className="bg-muted/50 rounded p-2">
-                      <div className="font-bold text-base text-emerald-600">{results.irrigation.waterSaved_percent}%</div>
-                      <span className="text-muted-foreground">Saved</span>
+                    <div className="bg-[#faf4e8] rounded-[16px] p-3 border border-[rgba(61,31,10,0.1)]">
+                      <div className="font-bold text-xl text-[#3d1f0a]">{results.irrigation.waterSaved_percent}%</div>
+                      <span className="text-[#6b4423]">{t("dashboard.saved")}</span>
                     </div>
                   </div>
-                  <Link href="/irrigation" className="text-xs text-emerald-600 hover:underline flex items-center gap-1 pt-1">
-                    Full schedule <ArrowRight className="h-3 w-3" />
+                  <div className="h-2.5 w-full bg-[#e8dcc8] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#16a34a] rounded-full transition-all duration-700" style={{ width: `${results.irrigation.soilMoisturePercent}%` }} />
+                  </div>
+                  <Link href="/irrigation" className="text-sm text-[#16a34a] hover:underline font-medium flex items-center gap-1 pt-1">
+                    {t("dashboard.fullSchedule")} <ArrowRight className="h-3 w-3" />
                   </Link>
                 </CardContent>
               </Card>
@@ -294,30 +401,36 @@ export default function DashboardPage() {
 
             {/* Pest Outbreak */}
             {results.pestOutbreak && (
-              <Card className="border-l-4 border-l-orange-400">
+              <Card className="card-earth rounded-[24px] relative overflow-hidden">
+                <span className="absolute right-4 top-4 text-7xl opacity-[0.08] pointer-events-none">🌽</span>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Bug className="h-4 w-4 text-orange-500" />
-                      Pest Outbreak
+                    <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[#3d1f0a]">
+                      <Bug className="h-4 w-4 text-[#16a34a]" />
+                      {t("dashboard.pestOutbreak")}
                     </CardTitle>
                     <Badge className={
-                      results.pestOutbreak.riskZone === "Low" ? "bg-emerald-100 text-emerald-700" :
-                      results.pestOutbreak.riskZone === "Moderate" ? "bg-yellow-100 text-yellow-700" :
-                      "bg-red-100 text-red-700"
-                    }>{results.pestOutbreak.riskZone}</Badge>
+                      results.pestOutbreak.riskZone === "Low" ? "bg-[#16a34a]/15 text-[#16a34a] border-[#16a34a]/30" :
+                      results.pestOutbreak.riskZone === "Moderate" ? "bg-[#f59e0b]/20 text-[#6b4423] border-[#f59e0b]/40" :
+                      "bg-[#b91c1c]/15 text-[#b91c1c] border-[#b91c1c]/30"
+                    }>{results.pestOutbreak.riskZone === "Low" ? t("price.riskLow") : results.pestOutbreak.riskZone === "Moderate" ? t("price.riskMedium") : t("price.riskHigh")}</Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="text-3xl font-bold">{results.pestOutbreak.outbreakProbability}%</div>
-                  <div className="text-xs text-muted-foreground">outbreak probability</div>
+                <CardContent className="space-y-3">
+                  <div className="text-[48px] leading-none font-bold text-[#3d1f0a]">
+                    {results.pestOutbreak.outbreakProbability}%
+                  </div>
+                  <div className="text-[13px] text-[#6b4423]">{t("dashboard.outbreakProbability")}</div>
+                  <div className="h-2.5 w-full bg-[#e8dcc8] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#16a34a] rounded-full transition-all duration-700" style={{ width: `${results.pestOutbreak.outbreakProbability}%` }} />
+                  </div>
                   {results.pestOutbreak.affectedCrops.slice(0, 2).map((c, i) => (
-                    <div key={i} className="flex justify-between text-xs">
-                      <span>{c.crop} ({c.pest})</span><span className="font-medium">{c.riskPercent}%</span>
+                    <div key={i} className="flex justify-between text-[13px] text-[#6b4423]">
+                      <span>{t(`crops.${c.crop}`)} ({c.pest})</span><span className="font-bold text-[#3d1f0a]">{c.riskPercent}%</span>
                     </div>
                   ))}
-                  <Link href="/pest-outbreak" className="text-xs text-emerald-600 hover:underline flex items-center gap-1 pt-1">
-                    District alerts <ArrowRight className="h-3 w-3" />
+                  <Link href="/pest-outbreak" className="text-sm text-[#16a34a] hover:underline font-medium flex items-center gap-1 pt-1">
+                    {t("dashboard.districtAlerts")} <ArrowRight className="h-3 w-3" />
                   </Link>
                 </CardContent>
               </Card>
@@ -325,31 +438,32 @@ export default function DashboardPage() {
 
             {/* SMS Alerts */}
             {results.smsAlerts && (
-              <Card className="border-l-4 border-l-emerald-400">
+              <Card className="card-earth rounded-[24px] relative overflow-hidden">
+                <span className="absolute right-4 top-4 text-7xl opacity-[0.08] pointer-events-none">📱</span>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-emerald-500" />
-                      SMS Alerts
+                    <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[#3d1f0a]">
+                      <MessageSquare className="h-4 w-4 text-[#16a34a]" />
+                      {t("dashboard.smsAlerts")}
                     </CardTitle>
-                    <Badge className="bg-emerald-100 text-emerald-700">{results.smsAlerts.totalSent} sent</Badge>
+                    <Badge className="bg-[#16a34a]/15 text-[#16a34a] border-[#16a34a]/30">{results.smsAlerts.totalSent} {t("dashboard.sent")}</Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="text-xs">
-                    <span className="text-red-600 font-medium">{results.smsAlerts.criticalCount} critical</span>
-                    <span className="text-muted-foreground"> alerts triggered</span>
+                <CardContent className="space-y-3">
+                  <div className="text-[13px] text-[#6b4423]">
+                    <span className="text-[#b91c1c] font-semibold">{results.smsAlerts.criticalCount} {t("dashboard.critical")}</span>
+                    <span> {t("dashboard.alertsTriggered")}</span>
                   </div>
                   {results.smsAlerts.alerts.slice(0, 2).map((a) => (
-                    <div key={a.id} className="text-[11px] bg-muted/50 rounded p-2">
-                      <Badge className={`text-[9px] mb-1 ${a.priority === "Critical" ? "bg-red-100 text-red-700" : a.priority === "High" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"}`}>
-                        {a.priority}
+                    <div key={a.id} className="text-[13px] bg-[#faf4e8] rounded-[16px] p-3 border border-[rgba(61,31,10,0.1)]">
+                      <Badge className={`text-[9px] mb-1 ${a.priority === "Critical" ? "bg-[#b91c1c]/15 text-[#b91c1c]" : a.priority === "High" ? "bg-[#f59e0b]/20 text-[#6b4423]" : "bg-[#16a34a]/15 text-[#16a34a]"}`}>
+                        {a.priority === "Critical" ? t("price.riskHigh") : a.priority === "High" ? t("price.riskMedium") : t("price.riskLow")}
                       </Badge>
-                      <p className="text-muted-foreground line-clamp-2">{a.message}</p>
+                      <p className="text-[#6b4423] line-clamp-2">{a.message}</p>
                     </div>
                   ))}
-                  <Link href="/sms-alerts" className="text-xs text-emerald-600 hover:underline flex items-center gap-1 pt-1">
-                    All alerts <ArrowRight className="h-3 w-3" />
+                  <Link href="/sms-alerts" className="text-sm text-[#16a34a] hover:underline font-medium flex items-center gap-1 pt-1">
+                    {t("dashboard.allAlerts")} <ArrowRight className="h-3 w-3" />
                   </Link>
                 </CardContent>
               </Card>
@@ -358,20 +472,20 @@ export default function DashboardPage() {
 
           {/* Crop Advisory */}
           {results.advisory && (
-            <Card className="border-l-4 border-l-red-400">
+            <Card className="card-earth rounded-[24px] border-l-4 border-l-[#b91c1c]">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                  Crops to Avoid This Season
+                <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[#3d1f0a]">
+                  <AlertTriangle className="h-4 w-4 text-[#b91c1c]" />
+                  {t("dashboard.cropsToAvoid")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {results.advisory.cropsToAvoid.slice(0, 4).map((crop) => (
-                    <div key={crop.cropName} className="flex items-center justify-between text-xs bg-red-50 rounded-lg p-2">
+                    <div key={crop.cropName} className="flex items-center justify-between text-xs bg-[#faf4e8] rounded-[16px] p-2.5 border border-[rgba(185,28,28,0.2)]">
                       <div className="flex items-center gap-1.5">
-                        <XCircle className="h-3.5 w-3.5 text-red-400" />
-                        <span className="font-medium">{crop.cropName}</span>
+                        <XCircle className="h-3.5 w-3.5 text-[#b91c1c]" />
+                        <span className="font-medium text-[#3d1f0a]">{t(`crops.${crop.cropName}`)}</span>
                       </div>
                       <RiskBadge level={crop.riskLevel === "Very High" ? "High" : crop.riskLevel} />
                     </div>
@@ -379,9 +493,9 @@ export default function DashboardPage() {
                 </div>
                 {results.advisory.safeCrops.length > 0 && (
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-muted-foreground">Safe:</span>
+                    <span className="text-xs text-[#6b4423]">{t("dashboard.safe")}</span>
                     {results.advisory.safeCrops.map((c) => (
-                      <Badge key={c.name} variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">{c.name}</Badge>
+                      <Badge key={c.name} className="text-[10px] bg-[#16a34a]/15 text-[#16a34a] border-[#16a34a]/30">{t(`crops.${c.name}`)}</Badge>
                     ))}
                   </div>
                 )}
@@ -392,16 +506,14 @@ export default function DashboardPage() {
       )}
 
       {/* Info Banner */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="card-earth rounded-[24px]">
         <CardContent className="pt-4 pb-4">
           <div className="flex items-start gap-3">
-            <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-            <div className="text-xs text-blue-800 space-y-1">
-              <p className="font-medium">About This Platform</p>
+            <Info className="h-5 w-5 text-[#16a34a] mt-0.5 shrink-0" />
+            <div className="text-[14px] text-[#6b4423] space-y-1">
+              <p className="font-semibold text-[#3d1f0a]">{t("dashboard.aboutPlatform")}</p>
               <p>
-                CropIntel AI uses simulated ML models (CNN, LSTM, XGBoost, Random Forest) for decision intelligence.
-                Includes disease detection, risk forecasting, profit prediction, irrigation optimization, pest outbreak forecasting,
-                SMS alerts, and an AI chatbot assistant. All predictions include confidence scores and uncertainty ranges.
+                {t("dashboard.aboutDesc")}
               </p>
             </div>
           </div>
@@ -411,18 +523,22 @@ export default function DashboardPage() {
   );
 }
 
-function QuickLinkCard({ icon, title, description, href }: { icon: React.ReactNode; title: string; description: string; href: string }) {
+function QuickLinkCard({ icon, title, description, href, watermark = "🌾" }: { icon: React.ReactNode; title: string; description: string; href: string; watermark?: string }) {
+  const { t } = useTranslation();
   return (
     <Link href={href}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-        <CardContent className="pt-5 pb-5">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5">{icon}</div>
+      <Card className="card-earth rounded-[24px] hover:shadow-md transition-all cursor-pointer h-full relative overflow-hidden group">
+        <span className="absolute right-2 top-2 text-6xl opacity-[0.12] pointer-events-none group-hover:opacity-20 transition-opacity">{watermark}</span>
+        <CardContent className="pt-5 pb-5 relative">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-[#faf4e8] border-2 border-[rgba(22,163,74,0.3)] text-[#16a34a]">
+              <div className="scale-125">{icon}</div>
+            </div>
             <div>
-              <h3 className="text-sm font-medium text-foreground">{title}</h3>
-              <p className="text-xs text-muted-foreground mt-1">{description}</p>
-              <span className="text-xs text-emerald-600 mt-2 inline-flex items-center gap-1">
-                Get started <ArrowRight className="h-3 w-3" />
+              <h3 className="text-base font-bold text-[#3d1f0a]" style={{ fontFamily: "'Playfair Display', serif", letterSpacing: "0.3px" }}>{title}</h3>
+              <p className="text-[13px] text-[#6b4423] mt-1">{description}</p>
+              <span className="text-sm text-[#16a34a] font-medium mt-2 inline-flex items-center gap-1">
+                {t("card.getStarted")} <ArrowRight className="h-3 w-3" />
               </span>
             </div>
           </div>
@@ -433,10 +549,11 @@ function QuickLinkCard({ icon, title, description, href }: { icon: React.ReactNo
 }
 
 function RiskBadge({ level }: { level: string }) {
+  const { t } = useTranslation();
   const colors: Record<string, string> = {
-    Low: "bg-emerald-100 text-emerald-700",
-    Medium: "bg-yellow-100 text-yellow-700",
-    High: "bg-red-100 text-red-700",
+    Low: "bg-[#16a34a]/15 text-[#16a34a] border-[#16a34a]/30",
+    Medium: "bg-[#f59e0b]/20 text-[#6b4423] border-[#f59e0b]/40",
+    High: "bg-[#b91c1c]/15 text-[#b91c1c] border-[#b91c1c]/30",
   };
-  return <Badge className={`text-[10px] ${colors[level] || colors.Medium}`}>{level} Risk</Badge>;
+  return <Badge variant="outline" className={`text-[10px] border ${colors[level] || colors.Medium}`}>{level === "High" ? t("dashboard.riskHigh") : level === "Medium" ? t("dashboard.riskMedium") : t("dashboard.riskLow")}</Badge>;
 }

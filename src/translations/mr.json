@@ -1,0 +1,24 @@
+{
+  "dashboard.title": "निर्णय बुद्धिमत्ता",
+  "dashboard.subtitle": "तुमची शेती डायरी — रोग, नफा, सिंचन आणि बाजार सल्ला एकाच ठिकाणी.",
+  "dashboard.crop": "पीक",
+  "dashboard.region": "प्रदेश",
+  "dashboard.season": "हंगाम",
+  "dashboard.runAnalysis": "पूर्ण विश्लेषण चालवा",
+
+  "nav.dashboard": "डॅशबोर्ड",
+  "nav.diseaseDetection": "रोग शोध",
+  "nav.diseaseRisk": "रोगाचा धोका",
+  "nav.profitPrediction": "नफ्याचा अंदाज",
+  "nav.sellStore": "विक्री / साठवणूक",
+  "nav.cropAdvisory": "पीक सल्ला",
+  "nav.smartIrrigation": "स्मार्ट सिंचन",
+  "nav.pestOutbreak": "किडींचा प्रादुर्भाव",
+  "nav.smsAlerts": "एसएमएस सूचना",
+  "nav.aiAssistant": "एआय सहाय्यक",
+  "nav.voiceAssistant": "व्हॉइस सहाय्यक",
+
+  "sidebar.appName": "CropIntel AI",
+  "sidebar.subtitle": "निर्णय बुद्धिमत्ता",
+  "common.demoMode": "डेमो मोड"
+}

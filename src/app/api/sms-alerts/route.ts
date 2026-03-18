@@ -4,8 +4,10 @@ import { getAlertHistory, getGatewayConfig } from "@/lib/sms-engine";
 
 export async function POST(req: NextRequest) {
   try {
+    const language = req.headers.get("x-language") || "en";
     const body = await req.json();
-    const { cropType, region, season, farmerPhone, language } = body;
+    body.language = language;
+    const { cropType, region, season, farmerPhone } = body;
 
     if (!cropType || !region || !season) {
       return NextResponse.json({ error: "Required fields: cropType, region, season" }, { status: 400 });

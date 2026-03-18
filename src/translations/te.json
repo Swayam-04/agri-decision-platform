@@ -1,0 +1,24 @@
+{
+  "dashboard.title": "నిర్ణయ మేధస్సు",
+  "dashboard.subtitle": "మీ వ్యవసాయ డైరీ — వ్యాధి, లాభం, నీటిపారుదల మరియు మార్కెట్ సలహా ఒకే చోట.",
+  "dashboard.crop": "పంట",
+  "dashboard.region": "ప్రాంతం",
+  "dashboard.season": "కాలానుగుణ",
+  "dashboard.runAnalysis": "పూర్తి విశ్లేషణను అమలు చేయండి",
+
+  "nav.dashboard": "డ్యాష్‌బోర్డ్",
+  "nav.diseaseDetection": "వ్యాధి గుర్తింపు",
+  "nav.diseaseRisk": "వ్యాధి ప్రమాదం",
+  "nav.profitPrediction": "లాభం అంచనా",
+  "nav.sellStore": "అమ్మకం / నిల్వ",
+  "nav.cropAdvisory": "పంట సలహా",
+  "nav.smartIrrigation": "స్మార్ట్ నీటిపారుదల",
+  "nav.pestOutbreak": "తెగులు వ్యాప్తి",
+  "nav.smsAlerts": "SMS హెచ్చరికలు",
+  "nav.aiAssistant": "AI సహాయకుడు",
+  "nav.voiceAssistant": "వాయిస్ అసిస్టెంట్",
+
+  "sidebar.appName": "CropIntel AI",
+  "sidebar.subtitle": "నిర్ణయ మేధస్సు",
+  "common.demoMode": "డెమో మోడ్"
+}

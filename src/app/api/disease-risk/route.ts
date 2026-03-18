@@ -3,7 +3,9 @@ import { simulateDiseaseRisk } from "@/lib/ai-engine";
 
 export async function POST(req: NextRequest) {
   try {
+    const language = req.headers.get("x-language") || "en";
     const body = await req.json();
+    body.language = language;
     const { cropType, region, temperature, humidity, rainfall, season } = body;
 
     if (!cropType || !region || temperature == null || humidity == null || rainfall == null || !season) {
@@ -12,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     await new Promise((r) => setTimeout(r, 600));
 
-    const result = simulateDiseaseRisk({ cropType, region, temperature, humidity, rainfall, season });
+    const result = simulateDiseaseRisk({ cropType, region, temperature, humidity, rainfall, season , language });
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Failed to forecast disease risk" }, { status: 500 });

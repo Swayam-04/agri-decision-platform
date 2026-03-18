@@ -1,0 +1,24 @@
+{
+  "dashboard.title": "সিদ্ধান্ত বুদ্ধিমত্তা",
+  "dashboard.subtitle": "আপনার খামার ডায়েরি — রোগ, লাভ, সেচ, এবং বাজারের পরামর্শ এক জায়গায়।",
+  "dashboard.crop": "ফসল",
+  "dashboard.region": "অঞ্চল",
+  "dashboard.season": "ঋতু",
+  "dashboard.runAnalysis": "পূর্ণ বিশ্লেষণ চালান",
+
+  "nav.dashboard": "ড্যাশবোর্ড",
+  "nav.diseaseDetection": "রোগ নির্ণয়",
+  "nav.diseaseRisk": "রোগের ঝুঁকি",
+  "nav.profitPrediction": "লাভের পূর্বাভাস",
+  "nav.sellStore": "বিক্রি / সংরক্ষণ",
+  "nav.cropAdvisory": "ফসল পরামর্শ",
+  "nav.smartIrrigation": "স্মার্ট সেচ",
+  "nav.pestOutbreak": "কীটপতঙ্গের প্রাদুর্ভাব",
+  "nav.smsAlerts": "এসএমএস সতর্কতা",
+  "nav.aiAssistant": "এআই সহকারী",
+  "nav.voiceAssistant": "ভয়েস সহকারী",
+
+  "sidebar.appName": "CropIntel AI",
+  "sidebar.subtitle": "সিদ্ধান্ত বুদ্ধিমত্তা",
+  "common.demoMode": "ডেমো মোড"
+}

@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CROP_LIST, REGION_LIST, SEASON_LIST } from "@/lib/types";
 import type { ChatMessage } from "@/lib/types";
 import { Bot, User, Send, Loader2, Sparkles } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ChatbotPage() {
+  const { t } = useTranslation();
   const [cropType, setCropType] = useState("Rice");
   const [region, setRegion] = useState("Punjab");
   const [season, setSeason] = useState("Kharif");
@@ -66,9 +68,9 @@ export default function ChatbotPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">AI Farm Assistant</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("chat.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Ask questions about diseases, profit, irrigation, market advice, and more in simple language.
+          {t("chat.subtitle")}
         </p>
       </div>
 
@@ -76,18 +78,18 @@ export default function ChatbotPage() {
       <Card>
         <CardContent className="pt-4 pb-4">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs text-muted-foreground">Context:</span>
+            <span className="text-xs text-muted-foreground">{t("chat.context")}</span>
             <Select value={cropType} onValueChange={setCropType}>
               <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>{CROP_LIST.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              <SelectContent>{CROP_LIST.map((c) => <SelectItem key={c} value={c}>{t(`crops.${c}`)}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={region} onValueChange={setRegion}>
               <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>{REGION_LIST.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+              <SelectContent>{REGION_LIST.map((r) => <SelectItem key={r} value={r}>{t(`regions.${r}`)}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={season} onValueChange={setSeason}>
               <SelectTrigger className="w-[110px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>{SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              <SelectContent>{SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{t(`seasons.${s}`)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         </CardContent>
@@ -164,7 +166,7 @@ export default function ChatbotPage() {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about your crop, disease, profit, market..."
+              placeholder={t("chat.placeholder")}
               className="flex-1"
               disabled={loading}
             />

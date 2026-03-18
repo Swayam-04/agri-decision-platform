@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CROP_LIST, REGION_LIST, SEASON_LIST } from "@/lib/types";
 import type { ProfitPredictionResult } from "@/lib/types";
 import { TrendingUp, Loader2, IndianRupee, AlertTriangle, BarChart3 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ProfitPredictPage() {
+  const { t } = useTranslation();
   const [cropType, setCropType] = useState("Rice");
   const [region, setRegion] = useState("Punjab");
   const [season, setSeason] = useState("Kharif");
@@ -41,11 +43,10 @@ export default function ProfitPredictPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <TrendingUp className="h-6 w-6 text-blue-500" />
-          Yield & Profit Prediction
+          {t("profit.title")}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Estimate expected yield, market price, input costs, and profit per acre.
-          Simulated Random Forest / XGBoost regression model.
+          {t("profit.subtitle")}
         </p>
       </div>
 
@@ -53,60 +54,60 @@ export default function ProfitPredictPage() {
         {/* Input Panel */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-sm">Farm Details</CardTitle>
+            <CardTitle className="text-sm">{t("profit.farmDetails")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Crop</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("detect.cropType")}</label>
               <Select value={cropType} onValueChange={setCropType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CROP_LIST.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  {CROP_LIST.map((c) => <SelectItem key={c} value={c}>{t(`crops.${c}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Region</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("advisory.regionLabel")}</label>
               <Select value={region} onValueChange={setRegion}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {REGION_LIST.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  {REGION_LIST.map((r) => <SelectItem key={r} value={r}>{t(`regions.${r}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Season</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("advisory.seasonLabel")}</label>
               <Select value={season} onValueChange={setSeason}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{t(`seasons.${s}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Acreage</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("profit.acreage")}</label>
               <Input type="number" value={acreage} onChange={(e) => setAcreage(e.target.value)} />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Irrigation Type</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("profit.irrigation")}</label>
               <Select value={irrigationType} onValueChange={setIrrigationType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["Canal", "Drip", "Sprinkler", "Rain-fed"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  {["Canal", "Drip", "Sprinkler", "Rain-fed"].map((tItem) => <SelectItem key={tItem} value={tItem}>{t(`irrigationType.${tItem}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Soil Type</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("profit.soil")}</label>
               <Select value={soilType} onValueChange={setSoilType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["Alluvial", "Black", "Red", "Laterite"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  {["Alluvial", "Black", "Red", "Laterite"].map((tItem) => <SelectItem key={tItem} value={tItem}>{t(`soilType.${tItem}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -116,7 +117,7 @@ export default function ProfitPredictPage() {
               disabled={loading}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Predicting...</> : "Predict Profit"}
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("profit.btnPredicting")}</> : t("profit.btnPredict")}
             </Button>
           </CardContent>
         </Card>
@@ -129,15 +130,15 @@ export default function ProfitPredictPage() {
               <CardContent className="pt-6 pb-6">
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-xs text-muted-foreground">Revenue / Acre</p>
+                    <p className="text-xs text-muted-foreground">{t("profit.revAcre")}</p>
                     <p className="text-2xl font-bold text-blue-600">Rs {result.grossRevenuePerAcre.toLocaleString("en-IN")}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Cost / Acre</p>
+                    <p className="text-xs text-muted-foreground">{t("profit.costAcre")}</p>
                     <p className="text-2xl font-bold text-orange-600">Rs {result.inputCostPerAcre.toLocaleString("en-IN")}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Profit / Acre</p>
+                    <p className="text-xs text-muted-foreground">{t("profit.profitAcre")}</p>
                     <p className={`text-2xl font-bold ${result.profitPerAcre >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                       Rs {result.profitPerAcre.toLocaleString("en-IN")}
                     </p>
@@ -145,13 +146,13 @@ export default function ProfitPredictPage() {
                 </div>
                 <div className="mt-3 text-center">
                   <p className="text-xs text-muted-foreground">
-                    Profit Range: Rs {result.profitRange.low.toLocaleString("en-IN")} to Rs {result.profitRange.high.toLocaleString("en-IN")} per acre
+                    {t("profit.profitRange")} Rs {result.profitRange.low.toLocaleString("en-IN")} {t("profit.to")} Rs {result.profitRange.high.toLocaleString("en-IN")} {t("profit.perAcre")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    For {acreage} acres: Rs {(result.profitPerAcre * parseFloat(acreage)).toLocaleString("en-IN")} total estimated profit
+                    {t("profit.for")} {acreage} {t("profit.acres")} Rs {(result.profitPerAcre * parseFloat(acreage)).toLocaleString("en-IN")} {t("profit.totalEst")}
                   </p>
                   <Badge variant="outline" className="mt-2 text-xs">
-                    {Math.round(result.confidenceScore * 100)}% Model Confidence
+                    {Math.round(result.confidenceScore * 100)}% {t("profit.modelConf")}
                   </Badge>
                 </div>
               </CardContent>
@@ -163,24 +164,24 @@ export default function ProfitPredictPage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <BarChart3 className="h-4 w-4 text-blue-500" />
-                    Expected Yield
+                    {t("profit.expYield")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">{result.expectedYieldPerAcre} <span className="text-sm font-normal text-muted-foreground">{result.yieldUnit}/acre</span></p>
+                  <p className="text-2xl font-bold">{result.expectedYieldPerAcre} <span className="text-sm font-normal text-muted-foreground">{result.yieldUnit}/{t("profit.perAcre")}</span></p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <IndianRupee className="h-4 w-4 text-emerald-500" />
-                    Market Price
+                    {t("profit.marketPrice")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">Rs {result.expectedMarketPrice.toLocaleString("en-IN")} <span className="text-sm font-normal text-muted-foreground">/quintal</span></p>
+                  <p className="text-2xl font-bold">Rs {result.expectedMarketPrice.toLocaleString("en-IN")} <span className="text-sm font-normal text-muted-foreground">/{t(`crops.${cropType}`) || "quintal"}</span></p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Range: Rs {result.marketPriceRange.low.toLocaleString("en-IN")} - Rs {result.marketPriceRange.high.toLocaleString("en-IN")}
+                    {t("profit.range")} Rs {result.marketPriceRange.low.toLocaleString("en-IN")} - Rs {result.marketPriceRange.high.toLocaleString("en-IN")}
                   </p>
                 </CardContent>
               </Card>
@@ -189,7 +190,7 @@ export default function ProfitPredictPage() {
             {/* Cost Breakdown */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Input Cost Breakdown (Per Acre)</CardTitle>
+                <CardTitle className="text-sm">{t("profit.costBreakdown")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -207,7 +208,7 @@ export default function ProfitPredictPage() {
                   })}
                 </div>
                 <div className="mt-3 pt-3 border-t flex justify-between text-sm font-medium">
-                  <span>Total Input Cost</span>
+                  <span>{t("profit.totalInput")}</span>
                   <span>Rs {result.inputCostPerAcre.toLocaleString("en-IN")}</span>
                 </div>
               </CardContent>
@@ -220,7 +221,7 @@ export default function ProfitPredictPage() {
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-xs font-medium text-yellow-800">Risk Factors</p>
+                      <p className="text-xs font-medium text-yellow-800">{t("profit.riskFactors")}</p>
                       <ul className="text-sm text-yellow-700 mt-1 space-y-1">
                         {result.riskFactors.map((r, i) => (
                           <li key={i} className="flex items-start gap-1">

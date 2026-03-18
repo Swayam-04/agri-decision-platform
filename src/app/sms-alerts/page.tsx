@@ -12,10 +12,12 @@ import {
   MessageSquare, Loader2, Phone, AlertTriangle, CheckCircle2, Send,
   Zap, RefreshCw, XCircle, Clock, BarChart3, Shield, Activity,
 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type ActiveTab = "trigger" | "send" | "history" | "monitor";
 
 export default function SmsAlertsPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ActiveTab>("trigger");
 
   // Trigger form state
@@ -114,18 +116,18 @@ export default function SmsAlertsPage() {
   };
 
   const tabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
-    { id: "trigger", label: "Event Trigger", icon: <Zap className="h-4 w-4" /> },
-    { id: "send", label: "Manual SMS", icon: <Send className="h-4 w-4" /> },
-    { id: "history", label: "Alert History", icon: <Clock className="h-4 w-4" /> },
-    { id: "monitor", label: "Monitoring", icon: <Activity className="h-4 w-4" /> },
+    { id: "trigger", label: t("sms.tabTrigger"), icon: <Zap className="h-4 w-4" /> },
+    { id: "send", label: t("sms.tabManual"), icon: <Send className="h-4 w-4" /> },
+    { id: "history", label: t("sms.tabHistory"), icon: <Clock className="h-4 w-4" /> },
+    { id: "monitor", label: t("sms.tabMonitor"), icon: <Activity className="h-4 w-4" /> },
   ];
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">SMS Alert System</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("sms.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Event-driven alerts with gateway abstraction, retry logic, deduplication, and delivery monitoring.
+          {t("sms.subtitle")}
         </p>
       </div>
 
@@ -163,58 +165,58 @@ export default function SmsAlertsPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Crop</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("detect.cropType")}</label>
                   <Select value={cropType} onValueChange={setCropType}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{CROP_LIST.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{CROP_LIST.map((c) => <SelectItem key={c} value={c}>{t(`crops.${c}`)}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Region</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("advisory.regionLabel")}</label>
                   <Select value={region} onValueChange={setRegion}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{REGION_LIST.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                    <SelectContent>{REGION_LIST.map((r) => <SelectItem key={r} value={r}>{t(`regions.${r}`)}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Season</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("advisory.seasonLabel")}</label>
                   <Select value={season} onValueChange={setSeason}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                    <SelectContent>{SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{t(`seasons.${s}`)}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Farmer Phone</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("sms.farmerPhone")}</label>
                   <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919876543210" />
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Temperature (°C)</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("risk.tempLabel")} (°C)</label>
                   <Input type="number" value={temperature} onChange={(e) => setTemperature(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Humidity (%)</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("risk.humidityLabel")} (%)</label>
                   <Input type="number" value={humidity} onChange={(e) => setHumidity(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Recent Rainfall (mm)</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("risk.rainfallLabel")} (mm)</label>
                   <Input type="number" value={rainfall} onChange={(e) => setRainfall(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Soil Type</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("profit.soil")}</label>
                   <Select value={soilType} onValueChange={setSoilType}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {["Alluvial", "Black", "Red", "Laterite", "Sandy", "Loamy", "Clay"].map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                        <SelectItem key={s} value={s}>{t(`soilType.${s}`) || s}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <Button onClick={handleTrigger} disabled={loading} className="bg-amber-600 hover:bg-amber-700 text-white">
-                {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Evaluating...</> : <><Zap className="h-4 w-4 mr-2" />Evaluate & Trigger Alerts</>}
+                {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("sms.btnEvaluating")}</> : <><Zap className="h-4 w-4 mr-2" />{t("sms.btnTrigger")}</>}
               </Button>
             </CardContent>
           </Card>
@@ -227,21 +229,21 @@ export default function SmsAlertsPage() {
                   <CardContent className="pt-5 pb-5 text-center">
                     <BarChart3 className="h-6 w-6 mx-auto text-blue-500 mb-2" />
                     <div className="text-2xl font-bold">{triggerResult.totalEvaluated}</div>
-                    <p className="text-xs text-muted-foreground">Events Evaluated</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.eventsEval")}</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-5 pb-5 text-center">
                     <Send className="h-6 w-6 mx-auto text-emerald-500 mb-2" />
                     <div className="text-2xl font-bold text-emerald-600">{triggerResult.triggeredAlerts.length}</div>
-                    <p className="text-xs text-muted-foreground">Alerts Sent</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.alertsSent")}</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-5 pb-5 text-center">
                     <Shield className="h-6 w-6 mx-auto text-gray-400 mb-2" />
                     <div className="text-2xl font-bold text-gray-500">{triggerResult.skippedDuplicates}</div>
-                    <p className="text-xs text-muted-foreground">Duplicates Skipped</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.dupSkipped")}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -249,7 +251,7 @@ export default function SmsAlertsPage() {
               {/* Threshold Evaluations */}
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Threshold Evaluations</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("sms.threshEval")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
@@ -280,7 +282,7 @@ export default function SmsAlertsPage() {
               {triggerResult.triggeredAlerts.length > 0 && (
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Sent Alert Details</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t("sms.sentDetails")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -303,7 +305,7 @@ export default function SmsAlertsPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Send className="h-4 w-4 text-blue-500" />
-                Send Manual SMS
+                {t("sms.sendManual")}
               </CardTitle>
               <p className="text-xs text-muted-foreground">
                 Send a single SMS with full validation, delivery tracking, and retry on failure.
@@ -312,11 +314,11 @@ export default function SmsAlertsPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Phone Number (with country code)</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("sms.phoneCountry")}</label>
                   <Input value={sendPhone} onChange={(e) => setSendPhone(e.target.value)} placeholder="+919876543210" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Priority</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("sms.priority")}</label>
                   <Select value={sendPriority} onValueChange={(v) => setSendPriority(v as "Normal" | "High" | "Critical")}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -329,7 +331,7 @@ export default function SmsAlertsPage() {
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-muted-foreground">Message</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t("sms.message")}</label>
                   <span className={`text-xs ${sendMessage.length > 160 ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
                     {sendMessage.length}/160
                   </span>
@@ -338,12 +340,11 @@ export default function SmsAlertsPage() {
                   className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={sendMessage}
                   onChange={(e) => setSendMessage(e.target.value)}
-                  placeholder="Type your alert message here (max 160 characters)..."
                   maxLength={200}
                 />
               </div>
               <Button onClick={handleSend} disabled={loading || !sendMessage.trim()} className="bg-blue-600 hover:bg-blue-700 text-white">
-                {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending...</> : <><Send className="h-4 w-4 mr-2" />Send SMS</>}
+                {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("sms.btnSending")}</> : <><Send className="h-4 w-4 mr-2" />{t("sms.btnSend")}</>}
               </Button>
             </CardContent>
           </Card>
@@ -359,7 +360,7 @@ export default function SmsAlertsPage() {
               <CardContent>
                 {sendResult.validationErrors && sendResult.validationErrors.length > 0 && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                    <p className="text-xs font-medium text-red-700 mb-1">Validation Errors:</p>
+                    <p className="text-xs font-medium text-red-700 mb-1">{t("sms.valError")}</p>
                     <ul className="list-disc list-inside text-xs text-red-600 space-y-0.5">
                       {sendResult.validationErrors.map((e, i) => <li key={i}>{e}</li>)}
                     </ul>
@@ -377,10 +378,10 @@ export default function SmsAlertsPage() {
         <div className="space-y-5">
           <div className="flex gap-3">
             <Button onClick={fetchHistory} disabled={loading} className="bg-gray-800 hover:bg-gray-900 text-white">
-              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Loading...</> : <><Clock className="h-4 w-4 mr-2" />Load Alert History</>}
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />...</> : <><Clock className="h-4 w-4 mr-2" />{t("sms.btnLoadHistory")}</>}
             </Button>
             <Button onClick={handleRetry} disabled={loading} variant="outline" className="border-red-300 text-red-700 hover:bg-red-50">
-              <RefreshCw className="h-4 w-4 mr-2" />Retry Failed
+              <RefreshCw className="h-4 w-4 mr-2" />{t("sms.btnRetry")}
             </Button>
           </div>
 
@@ -390,15 +391,15 @@ export default function SmsAlertsPage() {
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <div className="text-xl font-bold">{retryResult.retried}</div>
-                    <p className="text-xs text-muted-foreground">Retried</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.retried")}</p>
                   </div>
                   <div>
                     <div className="text-xl font-bold text-emerald-600">{retryResult.succeeded}</div>
-                    <p className="text-xs text-muted-foreground">Recovered</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.recovered")}</p>
                   </div>
                   <div>
                     <div className="text-xl font-bold text-red-600">{retryResult.stillFailed}</div>
-                    <p className="text-xs text-muted-foreground">Still Failed</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.stillFailed")}</p>
                   </div>
                 </div>
               </CardContent>
@@ -411,15 +412,15 @@ export default function SmsAlertsPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Card><CardContent className="pt-4 pb-4 text-center">
                   <div className="text-xl font-bold">{historyResult.stats.total}</div>
-                  <p className="text-xs text-muted-foreground">Total Alerts</p>
+                  <p className="text-xs text-muted-foreground">{t("sms.totalSent")}</p>
                 </CardContent></Card>
                 <Card><CardContent className="pt-4 pb-4 text-center">
                   <div className="text-xl font-bold text-emerald-600">{historyResult.stats.deliveryRate}%</div>
-                  <p className="text-xs text-muted-foreground">Delivery Rate</p>
+                  <p className="text-xs text-muted-foreground">{t("sms.successRate")}</p>
                 </CardContent></Card>
                 <Card><CardContent className="pt-4 pb-4 text-center">
                   <div className="text-xl font-bold text-red-600">{historyResult.stats.failed}</div>
-                  <p className="text-xs text-muted-foreground">Failed</p>
+                  <p className="text-xs text-muted-foreground">{t("sms.failed")}</p>
                 </CardContent></Card>
                 <Card><CardContent className="pt-4 pb-4 text-center">
                   <div className="text-xl font-bold text-amber-600">{historyResult.stats.avgRetries}</div>
@@ -582,7 +583,7 @@ export default function SmsAlertsPage() {
                   </div>
                   <div className="text-center p-3 border rounded-lg border-blue-200 bg-blue-50/50">
                     <div className="text-xl font-bold text-blue-600">{historyResult.stats.deliveryRate}%</div>
-                    <p className="text-xs text-muted-foreground">Success Rate</p>
+                    <p className="text-xs text-muted-foreground">{t("sms.successRate")}</p>
                   </div>
                 </div>
               </CardContent>

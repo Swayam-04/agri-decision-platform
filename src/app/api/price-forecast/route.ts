@@ -3,7 +3,9 @@ import { simulatePriceForecast } from "@/lib/ai-engine";
 
 export async function POST(req: NextRequest) {
   try {
+    const language = req.headers.get("x-language") || "en";
     const body = await req.json();
+    body.language = language;
     const { cropType, region, currentPrice, quantityQuintals, storageCostPerDay } = body;
 
     if (!cropType || !region || !currentPrice || !quantityQuintals || !storageCostPerDay) {
@@ -12,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     await new Promise((r) => setTimeout(r, 600));
 
-    const result = simulatePriceForecast({ cropType, region, currentPrice, quantityQuintals, storageCostPerDay });
+    const result = simulatePriceForecast({ cropType, region, currentPrice, quantityQuintals, storageCostPerDay , language });
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Failed to forecast price" }, { status: 500 });

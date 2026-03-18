@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { REGION_LIST, SEASON_LIST } from "@/lib/types";
 import type { RiskAdvisoryResult } from "@/lib/types";
 import { AlertTriangle, Loader2, XCircle, CheckCircle2, Info, ShieldAlert } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function RiskAdvisoryPage() {
+  const { t } = useTranslation();
   const [region, setRegion] = useState("Rajasthan");
   const [season, setSeason] = useState("Kharif");
   const [loading, setLoading] = useState(false);
@@ -43,11 +45,10 @@ export default function RiskAdvisoryPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <AlertTriangle className="h-6 w-6 text-red-500" />
-          Crop Risk Advisory
+          {t("advisory.pageTitle")}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Find out which crops to avoid for your region and season.
-          Transparent risk scoring with clear explanations - no black-box outputs.
+          {t("advisory.pageSubtitle")}
         </p>
       </div>
 
@@ -56,20 +57,20 @@ export default function RiskAdvisoryPage() {
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Region</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("advisory.regionLabel")}</label>
               <Select value={region} onValueChange={setRegion}>
                 <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {REGION_LIST.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  {REGION_LIST.map((r) => <SelectItem key={r} value={r}>{t(`regions.${r}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Season</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("advisory.seasonLabel")}</label>
               <Select value={season} onValueChange={setSeason}>
                 <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{t(`seasons.${s}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -78,7 +79,7 @@ export default function RiskAdvisoryPage() {
               disabled={loading}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Analyzing...</> : "Get Risk Advisory"}
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("advisory.analyzing")}</> : t("advisory.getButton")}
             </Button>
           </div>
         </CardContent>
@@ -92,7 +93,7 @@ export default function RiskAdvisoryPage() {
               <div className="flex items-start gap-2">
                 <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-xs font-medium text-blue-800">Seasonal Insight</p>
+                  <p className="text-xs font-medium text-blue-800">{t("advisory.seasonalInsight")}</p>
                   <p className="text-sm text-blue-700 mt-1">{result.seasonalInsight}</p>
                 </div>
               </div>
@@ -103,7 +104,7 @@ export default function RiskAdvisoryPage() {
           <div>
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
               <XCircle className="h-5 w-5 text-red-500" />
-              Crops to Avoid in {region} ({season} Season)
+              {t("advisory.cropsToAvoid")} {t(`regions.${region}`)} ({t(`seasons.${season}`)} {t("advisory.seasonSuffix")}
             </h2>
             <div className="space-y-4">
               {result.cropsToAvoid.map((crop) => (
@@ -112,23 +113,23 @@ export default function RiskAdvisoryPage() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <ShieldAlert className="h-5 w-5 text-red-500" />
-                        <h3 className="text-base font-semibold">{crop.cropName}</h3>
+                        <h3 className="text-base font-semibold">{t(`crops.${crop.cropName}`)}</h3>
                       </div>
                       <Badge className={riskColors[crop.riskLevel]}>
-                        {crop.riskLevel} Risk ({crop.riskScore}/100)
+                        {t(`advisory.risk.${crop.riskLevel}`)} ({crop.riskScore}/100)
                       </Badge>
                     </div>
 
                     {/* Risk Breakdown */}
                     <div className="grid grid-cols-3 gap-3 mb-3">
-                      <RiskBar label="Disease Risk" value={crop.diseaseRisk} />
-                      <RiskBar label="Profit Volatility" value={crop.profitVolatility} />
-                      <RiskBar label="Climate Mismatch" value={crop.climateMismatch} />
+                      <RiskBar label={t("advisory.diseaseRisk")} value={crop.diseaseRisk} />
+                      <RiskBar label={t("advisory.profitVolatility")} value={crop.profitVolatility} />
+                      <RiskBar label={t("advisory.climateMismatch")} value={crop.climateMismatch} />
                     </div>
 
                     {/* Reasons */}
                     <div className="space-y-1.5">
-                      <p className="text-xs font-medium text-muted-foreground">Why to avoid:</p>
+                      <p className="text-xs font-medium text-muted-foreground">{t("advisory.whyToAvoid")}</p>
                       {crop.reasons.map((reason, i) => (
                         <div key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
                           <XCircle className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" />
@@ -146,7 +147,7 @@ export default function RiskAdvisoryPage() {
           <div>
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              Recommended Crops for {region}
+              {t("advisory.recommendedCrops")} {t(`regions.${region}`)}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {result.safeCrops.map((crop) => (
@@ -155,7 +156,7 @@ export default function RiskAdvisoryPage() {
                     <div className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
                       <div>
-                        <h3 className="font-medium text-sm">{crop.name}</h3>
+                        <h3 className="font-medium text-sm">{t(`crops.${crop.name}`)}</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">{crop.reason}</p>
                       </div>
                     </div>

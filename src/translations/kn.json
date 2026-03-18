@@ -1,0 +1,24 @@
+{
+  "dashboard.title": "ನಿರ್ಧಾರ ಬುದ್ಧಿಮತ್ತೆ",
+  "dashboard.subtitle": "ನಿಮ್ಮ ಕೃಷಿ ಡೈರಿ — ರೋಗ, ಲಾಭ, ನೀರಾವರಿ ಮತ್ತು ಮಾರುಕಟ್ಟೆ ಸಲಹೆ ಒಂದೇ ಸ್ಥಳದಲ್ಲಿ.",
+  "dashboard.crop": "ಬೆಳೆ",
+  "dashboard.region": "ಪ್ರದೇಶ",
+  "dashboard.season": "ಋತು",
+  "dashboard.runAnalysis": "ಪೂರ್ಣ ವಿಶ್ಲೇಷಣೆಯನ್ನು ಚಲಾಯಿಸಿ",
+
+  "nav.dashboard": "ಡ್ಯಾಶ್ಬೋರ್ಡ್",
+  "nav.diseaseDetection": "ರೋಗ ಪತ್ತೆ",
+  "nav.diseaseRisk": "ರೋಗದ ಅಪಾಯ",
+  "nav.profitPrediction": "ಲಾಭದ ಮುನ್ಸೂಚನೆ",
+  "nav.sellStore": "ಮಾರಾಟ / ಅಂಗಡಿ",
+  "nav.cropAdvisory": "ಬೆಳೆ ಸಲಹೆ",
+  "nav.smartIrrigation": "ಸ್ಮಾರ್ಟ್ ನೀರಾವರಿ",
+  "nav.pestOutbreak": "ಕೀಟಗಳ ಏಕಾಏಕಿ",
+  "nav.smsAlerts": "SMS ಎಚ್ಚರಿಕೆಗಳು",
+  "nav.aiAssistant": "AI ಸಹಾಯಕ",
+  "nav.voiceAssistant": "ಧ್ವನಿ ಸಹಾಯಕ",
+
+  "sidebar.appName": "CropIntel AI",
+  "sidebar.subtitle": "ನಿರ್ಧಾರ ಬುದ್ಧಿಮತ್ತೆ",
+  "common.demoMode": "ಡೆಮೊ ಮೋಡ್"
+}

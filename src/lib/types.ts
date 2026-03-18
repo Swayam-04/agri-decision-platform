@@ -17,6 +17,7 @@ export interface DiseaseDetectionResult {
 }
 
 export interface DiseaseRiskInput {
+  language?: string;
   cropType: string;
   region: string;
   temperature: number;
@@ -35,6 +36,7 @@ export interface DiseaseRiskResult {
 }
 
 export interface ProfitPredictionInput {
+  language?: string;
   cropType: string;
   region: string;
   acreage: number;
@@ -58,6 +60,7 @@ export interface ProfitPredictionResult {
 }
 
 export interface PriceForecastInput {
+  language?: string;
   cropType: string;
   region: string;
   currentPrice: number;
@@ -90,6 +93,7 @@ export interface CropRiskAdvisory {
 }
 
 export interface RiskAdvisoryInput {
+  language?: string;
   region: string;
   season: string;
 }
@@ -112,6 +116,7 @@ export interface DecisionSummary {
 // ─── Smart Irrigation ───
 
 export interface IrrigationInput {
+  language?: string;
   cropType: string;
   region: string;
   soilType: string;
@@ -137,6 +142,7 @@ export interface IrrigationResult {
 // ─── Pest & Disease Outbreak Forecasting ───
 
 export interface PestOutbreakInput {
+  language?: string;
   region: string;
   season: string;
   temperature: number;
@@ -160,7 +166,7 @@ export interface SmsAlertInput {
   region: string;
   season: string;
   farmerPhone?: string;
-  language?: "English" | "Hindi";
+  language?: string;
 }
 
 export interface SmsAlert {

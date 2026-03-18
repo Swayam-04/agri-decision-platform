@@ -99,6 +99,91 @@ const DISEASE_DB: Record<string, { diseases: { name: string; severity: "Low" | "
   },
 };
 
+
+function tLocale(lang: string | undefined, templateId: string, vars: Record<string, any>) {
+  if (lang === 'hi') {
+    switch(templateId) {
+      case 'High Humidity': return 'उच्च आर्द्रता';
+      case 'Humidity': return 'आर्द्रता';
+      case 'Temperature Stress': return 'तापमान तनाव';
+      case 'Temperature': return 'तापमान';
+      case 'Heavy Rainfall': return 'भारी वर्षा';
+      case 'humid_exceed': return `${vars.hum}% सुरक्षित सीमा ${vars.thresh}% से अधिक है`;
+      case 'humid_safe': return `${vars.hum}% सुरक्षित सीमा के भीतर है`;
+      case 'temp_out': return `${vars.temp}°C अनुकूल श्रेणी (${vars.min}-${vars.max}°C) के बाहर है`;
+      case 'temp_safe': return `${vars.temp}°C अनुकूल श्रेणी के भीतर है`;
+      case 'rain_fungal': return `${vars.rain}mm फंगल रोगों के लिए स्थिति बनाता है`;
+      case 'rec_low': return `आपकी ${vars.crop} की फसल अगले 7-10 दिनों के लिए स्वस्थ दिख रही है। नियमित निगरानी जारी रखें।`;
+      case 'rec_med': return `${vars.crop} के लिए मध्यम बीमारी का जोखिम है। 3-4 दिनों के भीतर कवकनाशी स्प्रे करें।`;
+      case 'rec_high': return `${vars.crop} के लिए उच्च बीमारी का जोखिम! तत्काल कार्रवाई करें।`;
+      case 'cc_unsuited': return `${vars.crop} के लिए ${vars.season} के दौरान ${vars.region} की जलवायु अनुकूल नहीं है`;
+      case 'cc_disease': return `${vars.crop} के लिए इस क्षेत्र में उच्च बीमारी का दबाव (${vars.risk}% जोखिम) है`;
+      case 'cc_profit': return `${vars.crop} के लिए ${vars.region} में लाभ मार्जिन अत्यधिक अप्रत्याशित है`;
+      case 'cc_well': return `${vars.season} के दौरान ${vars.region} की जलवायु के लिए अच्छी तरह से अनुकूलित`;
+      case 'ir_no': return `मिट्टी की नमी ${vars.moist}% है जो ${vars.crop} के लिए पर्याप्त है। अभी सिंचाई की आवश्यकता नहीं है।`;
+      case 'ir_light': return `मिट्टी थोड़ी सूखी है (${vars.moist}%)। प्रति एकड़ ${vars.water} लीटर हल्की सिंचाई की सिफारिश की जाती है।`;
+      case 'ir_heavy': return `मिट्टी की नमी गम्भीर रूप से ${vars.moist}% पर कम है। प्रति एकड़ ${vars.water} लीटर तत्काल भारी सिंचाई आवश्यक है।`;
+      case 'ir_action_no': return 'सिंचाई की आवश्यकता नहीं';
+      case 'ir_action_light': return 'हल्की सिंचाई';
+      case 'ir_action_full': return 'पूर्ण सिंचाई चक्र';
+    }
+  } else if (lang === 'or') {
+    switch(templateId) {
+      case 'High Humidity': return 'ଅଧିକ ଆର୍ଦ୍ରତା';
+      case 'Humidity': return 'ଆର୍ଦ୍ରତା';
+      case 'Temperature Stress': return 'ତାପମାତ୍ରା ଚାପ';
+      case 'Temperature': return 'ତାପମାତ୍ରା';
+      case 'Heavy Rainfall': return 'ପ୍ରବଳ ବର୍ଷା';
+      case 'humid_exceed': return `${vars.hum}% ସୁରକ୍ଷିତ ସୀମା ${vars.thresh}% ରୁ ଅଧିକ`;
+      case 'humid_safe': return `${vars.hum}% ସୁରକ୍ଷିତ ସୀମା ମଧ୍ୟରେ ଅଛି`;
+      case 'temp_out': return `${vars.temp}°C ଅନୁକୂଳ ପରିସର (${vars.min}-${vars.max}°C) ବାହାରେ ଅଛି`;
+      case 'temp_safe': return `${vars.temp}°C ଅନୁକୂଳ ପରିସର ମଧ୍ୟରେ ଅଛି`;
+      case 'rain_fungal': return `${vars.rain}mm ଫଙ୍ଗାଲ୍ ରୋଗ ପାଇଁ ସ୍ଥିତି ସୃଷ୍ଟି କରେ`;
+      case 'rec_low': return `ଆପଣଙ୍କର ${vars.crop} ଫସଲ ଆଗାମୀ 7-10 ଦିନ ପାଇଁ ସୁସ୍ଥ ଦେଖାଯାଉଛି। ନିୟମିତ ନୀରିକ୍ଷଣ ଜାରି ରଖନ୍ତୁ।`;
+      case 'rec_med': return `${vars.crop} ପାଇଁ ମଧ୍ୟମ ରୋଗର ଆଶଙ୍କା। 3-4 ଦିନ ମଧ୍ୟରେ ଫଙ୍ଗିସାଇଡ୍ ସ୍ପ୍ରେ କରନ୍ତୁ।`;
+      case 'rec_high': return `${vars.crop} ପାଇଁ ଉଚ୍ଚ ରୋଗର ଆଶଙ୍କା! ତୁରନ୍ତ କାର୍ଯ୍ୟାନୁଷ୍ଠାନ ଗ୍ରହଣ କରନ୍ତୁ।`;
+      case 'cc_unsuited': return `${vars.crop} କୁ ${vars.season} ସମୟରେ ${vars.region} ର ଜଳବାୟୁ ସୁଟ୍ କରେ ନାହିଁ`;
+      case 'cc_disease': return `ଏହି ଅଞ୍ଚଳରେ ${vars.crop} ପାଇଁ ଅଧିକ ରୋଗ ଚାପ (${vars.risk}% ଆଶଙ୍କା) ଅଛି`;
+      case 'cc_profit': return `${vars.region} ରେ ${vars.crop} ର ଲାଭ ମାର୍ଜିନ୍ ଅତ୍ୟନ୍ତ ଅନିଶ୍ଚିତ`;
+      case 'cc_well': return `${vars.season} ଋତୁରେ ${vars.region} ର ଜଳବାୟୁ ପାଇଁ ଭଲ ଭାବରେ ଅନୁକୂଳ ଅଟେ`;
+      case 'ir_no': return `ମୃତ୍ତିକା ଆର୍ଦ୍ରତା ${vars.moist}% ଯାହା ${vars.crop} ପାଇଁ ପର୍ଯ୍ୟାପ୍ତ ଅଟେ। ବର୍ତ୍ତମାନ ସିଞ୍ଚନର ଆବଶ୍ୟକତା ନାହିଁ।`;
+      case 'ir_light': return `ମାଟି ଟିକିଏ ଶୁଖିଲା ଅଛି (${vars.moist}%)। ଏକର ପିଛା ${vars.water} ଲିଟର ହାଲୁକା ସିଞ୍ଚନ ପାଇଁ ସୁପାରିଶ କରାଯାଏ।`;
+      case 'ir_heavy': return `ମୃତ୍ତିକା ଆର୍ଦ୍ରତା ଗମ୍ଭୀର ଭାବରେ ${vars.moist}% ରେ କମ୍ ଅଛି। ଏକର ପିଛା ${vars.water} ଲିଟର ତୁରନ୍ତ ଅଧିକ ସିଞ୍ଚନର ଆବଶ୍ୟକତା ଅଛି।`;
+      case 'ir_action_no': return 'ସିଞ୍ଚନର ଆବଶ୍ୟକତା ନାହିଁ';
+      case 'ir_action_light': return 'ହାଲୁକା ସିଞ୍ଚନ';
+      case 'ir_action_full': return 'ସମ୍ପୂର୍ଣ୍ଣ ସିଞ୍ଚନ ଚକ୍ର';
+    }
+  }
+
+  // English fallback
+  switch(templateId) {
+    case 'High Humidity': return 'High Humidity';
+    case 'Humidity': return 'Humidity';
+    case 'Temperature Stress': return 'Temperature Stress';
+    case 'Temperature': return 'Temperature';
+    case 'Heavy Rainfall': return 'Heavy Rainfall';
+    case 'humid_exceed': return `${vars.hum}% exceeds safe threshold of ${vars.thresh}%`;
+    case 'humid_safe': return `${vars.hum}% is within safe range`;
+    case 'temp_out': return `${vars.temp}°C is outside optimal range (${vars.min}-${vars.max}°C)`;
+    case 'temp_safe': return `${vars.temp}°C is within optimal range`;
+    case 'rain_fungal': return `${vars.rain}mm creates conditions for fungal diseases`;
+    case 'rec_low': return `Your ${vars.crop} crop appears healthy for the next 7-10 days. Continue regular monitoring and maintain current practices.`;
+    case 'rec_med': return `Moderate disease risk detected for ${vars.crop}. Apply preventive fungicide spray within 3-4 days. Ensure proper drainage and avoid excess irrigation.`;
+    case 'rec_high': return `High disease risk for ${vars.crop}! Immediate action needed: apply protective fungicide, improve field drainage, and scout daily for early symptoms.`;
+    case 'cc_unsuited': return `${vars.crop} requires climate conditions not well-suited to ${vars.region} during ${vars.season} season`;
+    case 'cc_disease': return `High disease pressure (${vars.risk}% risk) in this region for ${vars.crop}`;
+    case 'cc_profit': return `Profit margins for ${vars.crop} are highly unpredictable in ${vars.region}`;
+    case 'cc_well': return `Well-adapted to ${vars.region}'s climate with proven yield records during ${vars.season} season`;
+    case 'ir_no': return `Soil moisture is ${vars.moist}% which is adequate for ${vars.crop}. No irrigation needed right now. Monitor again in 2-3 days.`;
+    case 'ir_light': return `Soil is slightly dry at ${vars.moist}%. A light irrigation of ${vars.water} liters per acre is recommended. Use drip or sprinkler for best results.`;
+    case 'ir_heavy': return `Soil moisture is critically low at ${vars.moist}%. Immediate heavy irrigation of ${vars.water} liters per acre needed. Start pump now to prevent crop stress.`;
+    case 'ir_action_no': return 'No irrigation needed';
+    case 'ir_action_light': return 'Light watering';
+    case 'ir_action_full': return 'Full irrigation cycle';
+  }
+  return templateId;
+}
+
 export function simulateDiseaseDetection(cropType: string): DiseaseDetectionResult {
   const db = DISEASE_DB[cropType] || DISEASE_DB["Rice"];
   const seed = cropType + Date.now().toString().slice(-4);
@@ -166,23 +251,23 @@ export function simulateDiseaseRisk(input: DiseaseRiskInput): DiseaseRiskResult 
 
   const factorsList: DiseaseRiskResult["factors"] = [];
   if (input.humidity > factors.humidityThreshold) {
-    factorsList.push({ factor: "High Humidity", impact: "Negative", detail: `${input.humidity}% exceeds safe threshold of ${factors.humidityThreshold}%` });
+    factorsList.push({ factor: tLocale(input.language, "High Humidity", {}), impact: "Negative", detail: tLocale(input.language, "humid_exceed", { hum: input.humidity, thresh: factors.humidityThreshold }) });
   } else {
-    factorsList.push({ factor: "Humidity", impact: "Positive", detail: `${input.humidity}% is within safe range` });
+    factorsList.push({ factor: tLocale(input.language, "Humidity", {}), impact: "Positive", detail: tLocale(input.language, "humid_safe", { hum: input.humidity }) });
   }
   if (input.temperature < factors.optimalTemp[0] || input.temperature > factors.optimalTemp[1]) {
-    factorsList.push({ factor: "Temperature Stress", impact: "Negative", detail: `${input.temperature}°C is outside optimal range (${factors.optimalTemp[0]}-${factors.optimalTemp[1]}°C)` });
+    factorsList.push({ factor: tLocale(input.language, "Temperature Stress", {}), impact: "Negative", detail: tLocale(input.language, "temp_out", { temp: input.temperature, min: factors.optimalTemp[0], max: factors.optimalTemp[1] }) });
   } else {
-    factorsList.push({ factor: "Temperature", impact: "Positive", detail: `${input.temperature}°C is within optimal range` });
+    factorsList.push({ factor: tLocale(input.language, "Temperature", {}), impact: "Positive", detail: tLocale(input.language, "temp_safe", { temp: input.temperature }) });
   }
   if (input.rainfall > 20) {
-    factorsList.push({ factor: "Heavy Rainfall", impact: "Negative", detail: `${input.rainfall}mm creates conditions for fungal diseases` });
+    factorsList.push({ factor: tLocale(input.language, "Heavy Rainfall", {}), impact: "Negative", detail: tLocale(input.language, "rain_fungal", { rain: input.rainfall }) });
   }
 
   const recommendations: Record<string, string> = {
-    Low: `Your ${input.cropType} crop appears healthy for the next 7-10 days. Continue regular monitoring and maintain current practices.`,
-    Medium: `Moderate disease risk detected for ${input.cropType}. Apply preventive fungicide spray within 3-4 days. Ensure proper drainage and avoid excess irrigation.`,
-    High: `High disease risk for ${input.cropType}! Immediate action needed: apply protective fungicide, improve field drainage, and scout daily for early symptoms.`,
+    Low: tLocale(input.language, "rec_low", { crop: input.cropType }),
+    Medium: tLocale(input.language, "rec_med", { crop: input.cropType }),
+    High: tLocale(input.language, "rec_high", { crop: input.cropType }),
   };
 
   return {
@@ -394,13 +479,13 @@ export function simulateRiskAdvisory(input: RiskAdvisoryInput): RiskAdvisoryResu
 
     const reasons: string[] = [];
     if (climateMismatch > 60) {
-      reasons.push(`${crop} requires climate conditions not well-suited to ${input.region} during ${input.season} season`);
+      reasons.push(tLocale(input.language, "cc_unsuited", { crop, region: input.region, season: input.season }));
     }
     if (diseaseRisk > 50) {
-      reasons.push(`High disease pressure (${diseaseRisk}% risk) in this region for ${crop}`);
+      reasons.push(tLocale(input.language, "cc_disease", { crop, risk: diseaseRisk }));
     }
     if (profitVolatility > 50) {
-      reasons.push(`Profit margins for ${crop} are highly unpredictable in ${input.region}`);
+      reasons.push(tLocale(input.language, "cc_profit", { crop, region: input.region }));
     }
     if (input.season === "Kharif" && ["Wheat"].includes(crop)) {
       reasons.push(`${crop} is a Rabi crop - growing in Kharif will result in poor yields`);
@@ -424,7 +509,7 @@ export function simulateRiskAdvisory(input: RiskAdvisoryInput): RiskAdvisoryResu
 
   const safeCrops = climate.suitableCrops.slice(0, 4).map(name => ({
     name,
-    reason: `Well-adapted to ${input.region}'s climate with proven yield records during ${input.season} season`,
+    reason: tLocale(input.language, "cc_well", { region: input.region, season: input.season }),
   }));
 
   const seasonInsights: Record<string, string> = {
@@ -498,15 +583,15 @@ export function simulateIrrigation(input: IrrigationInput): IrrigationResult {
   const days = ["Today", "Tomorrow", "Day 3", "Day 4", "Day 5", "Day 6", "Day 7"];
   const schedule = days.map((day, i) => {
     const futureDeficit = deficit - i * 3 + seededRandom(seed, i + 20) * 8;
-    if (futureDeficit <= 0) return { day, action: "No irrigation needed", waterLiters: 0 };
-    if (futureDeficit < 15) return { day, action: "Light watering", waterLiters: Math.round(waterRequired * 0.3) };
-    return { day, action: "Full irrigation cycle", waterLiters: Math.round(waterRequired * 0.7) };
+    if (futureDeficit <= 0) return { day, action: tLocale(input.language, "ir_action_no", {}), waterLiters: 0 };
+    if (futureDeficit < 15) return { day, action: tLocale(input.language, "ir_action_light", {}), waterLiters: Math.round(waterRequired * 0.3) };
+    return { day, action: tLocale(input.language, "ir_action_full", {}), waterLiters: Math.round(waterRequired * 0.7) };
   });
 
   const recommendations: Record<string, string> = {
-    "No Irrigation": `Soil moisture is ${Math.round(moisture)}% which is adequate for ${input.cropType}. No irrigation needed right now. Monitor again in 2-3 days.`,
-    "Light Irrigation": `Soil is slightly dry at ${Math.round(moisture)}%. A light irrigation of ${waterRequired} liters per acre is recommended. Use drip or sprinkler for best results.`,
-    "Heavy Irrigation": `Soil moisture is critically low at ${Math.round(moisture)}%. Immediate heavy irrigation of ${waterRequired} liters per acre needed. Start pump now to prevent crop stress.`,
+    "No Irrigation": tLocale(input.language, "ir_no", { moist: Math.round(moisture), crop: input.cropType }),
+    "Light Irrigation": tLocale(input.language, "ir_light", { moist: Math.round(moisture), water: waterRequired }),
+    "Heavy Irrigation": tLocale(input.language, "ir_heavy", { moist: Math.round(moisture), water: waterRequired }),
   };
 
   return {

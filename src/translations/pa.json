@@ -1,0 +1,24 @@
+{
+  "dashboard.title": "ਫੈਸਲਾ ਬੁੱਧੀ",
+  "dashboard.subtitle": "ਤੁਹਾਡੀ ਖੇਤੀ ਡਾਇਰੀ — ਬਿਮਾਰੀ, ਮੁਨਾਫਾ, ਸਿੰਚਾਈ, ਅਤੇ ਮਾਰਕੀਟ ਦੀ ਸਲਾਹ ਇੱਕੋ ਥਾਂ 'ਤੇ।",
+  "dashboard.crop": "ਫਸਲ",
+  "dashboard.region": "ਖੇਤਰ",
+  "dashboard.season": "ਮੌਸਮ",
+  "dashboard.runAnalysis": "ਪੂਰਾ ਵਿਸ਼ਲੇਸ਼ਣ ਚਲਾਓ",
+
+  "nav.dashboard": "ਡੈਸ਼ਬੋਰਡ",
+  "nav.diseaseDetection": "ਬਿਮਾਰੀ ਦੀ ਪਛਾਣ",
+  "nav.diseaseRisk": "ਬਿਮਾਰੀ ਦਾ ਖਤਰਾ",
+  "nav.profitPrediction": "ਮੁਨਾਫੇ ਦੀ ਭਵਿੱਖਬਾਣੀ",
+  "nav.sellStore": "ਵੇਚੋ / ਸਟੋਰ",
+  "nav.cropAdvisory": "ਫਸਲ ਸਲਾਹ",
+  "nav.smartIrrigation": "ਸਮਾਰਟ ਸਿੰਚਾਈ",
+  "nav.pestOutbreak": "ਕੀੜਿਆਂ ਦਾ ਪ੍ਰਕੋਪ",
+  "nav.smsAlerts": "SMS ਚੇਤਾਵਨੀਆਂ",
+  "nav.aiAssistant": "AI ਸਹਾਇਕ",
+  "nav.voiceAssistant": "ਵੌਇਸ ਸਹਾਇਕ",
+
+  "sidebar.appName": "CropIntel AI",
+  "sidebar.subtitle": "ਫੈਸਲਾ ਬੁੱਧੀ",
+  "common.demoMode": "ਡੈਮੋ ਮੋਡ"
+}

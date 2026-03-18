@@ -1,0 +1,24 @@
+{
+  "dashboard.title": "முடிவு நுண்ணறிவு",
+  "dashboard.subtitle": "உங்கள் பண்ணை நாட்குறிப்பு — நோய், லாபம், நீர்ப்பாசனம் மற்றும் சந்தை ஆலோசனை ஒரே இடத்தில்.",
+  "dashboard.crop": "பயிர்",
+  "dashboard.region": "பகுதி",
+  "dashboard.season": "பருவம்",
+  "dashboard.runAnalysis": "முழு பகுப்பாய்வை இயக்கு",
+
+  "nav.dashboard": "முகப்புப்பலகை",
+  "nav.diseaseDetection": "நோய் கண்டறிதல்",
+  "nav.diseaseRisk": "நோய் அபாயம்",
+  "nav.profitPrediction": "லாப கணிப்பு",
+  "nav.sellStore": "விற்க / சேமிக்க",
+  "nav.cropAdvisory": "பயிர் ஆலோசனை",
+  "nav.smartIrrigation": "ஸ்மார்ட் நீர்ப்பாசனம்",
+  "nav.pestOutbreak": "பூச்சி வெடிப்பு",
+  "nav.smsAlerts": "SMS விழிப்பூட்டல்கள்",
+  "nav.aiAssistant": "AI உதவியாளர்",
+  "nav.voiceAssistant": "குரல் உதவியாளர்",
+
+  "sidebar.appName": "CropIntel AI",
+  "sidebar.subtitle": "முடிவு நுண்ணறிவு",
+  "common.demoMode": "டெமோ பயன்முறை"
+}

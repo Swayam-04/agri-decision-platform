@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CROP_LIST } from "@/lib/types";
 import type { DiseaseDetectionResult } from "@/lib/types";
 import { Microscope, Upload, Loader2, AlertCircle, ShieldCheck, Pill, Shield } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function DiseaseDetectPage() {
+  const { t } = useTranslation();
   const [cropType, setCropType] = useState("Rice");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,10 +58,10 @@ export default function DiseaseDetectPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Microscope className="h-6 w-6 text-emerald-600" />
-          Disease Detection (Vision AI)
+          {t("detect.title")}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Upload a crop leaf image to detect diseases using CNN-based vision analysis.
+          {t("detect.subtitle")}
         </p>
       </div>
 
@@ -67,21 +69,21 @@ export default function DiseaseDetectPage() {
         {/* Input Panel */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Upload Crop Image</CardTitle>
+            <CardTitle className="text-sm">{t("detect.uploadCard")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Crop Type</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("detect.cropType")}</label>
               <Select value={cropType} onValueChange={setCropType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CROP_LIST.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  {CROP_LIST.map((c) => <SelectItem key={c} value={c}>{t(`crops.${c}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1.5">Leaf Image</label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5">{t("detect.leafImage")}</label>
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-emerald-400 transition-colors">
                 {imagePreview ? (
                   <div className="space-y-2">
@@ -90,13 +92,13 @@ export default function DiseaseDetectPage() {
                       alt="Uploaded crop leaf"
                       className="mx-auto max-h-48 rounded-lg object-contain"
                     />
-                    <p className="text-xs text-muted-foreground">Image uploaded. Click analyze to detect diseases.</p>
+                    <p className="text-xs text-muted-foreground">{t("detect.imageUploaded")}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">Click or drag to upload a leaf image</p>
-                    <p className="text-[10px] text-muted-foreground">JPG, PNG supported</p>
+                    <p className="text-xs text-muted-foreground">{t("detect.clickToUpload")}</p>
+                    <p className="text-[10px] text-muted-foreground">{t("detect.supportedFormats")}</p>
                   </div>
                 )}
                 <input
@@ -115,13 +117,21 @@ export default function DiseaseDetectPage() {
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {loading ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Analyzing with Vision AI...</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("detect.btnAnalyzing")}</>
               ) : (
-                <><Microscope className="h-4 w-4 mr-2" />Analyze Image</>
+                <><Microscope className="h-4 w-4 mr-2" />{t("detect.btnAnalyze")}</>
               )}
             </Button>
 
-
+            {/* Demo helper */}
+            {!imagePreview && (
+              <div className="bg-blue-50 rounded-lg p-3">
+                <p className="text-xs text-blue-800 font-medium">{t("detect.demoTip")}</p>
+                <p className="text-[11px] text-blue-600 mt-0.5">
+                  {t("detect.demoDesc")}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -133,10 +143,10 @@ export default function DiseaseDetectPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-red-500" />
-                    Detection Result
+                    {t("detect.resultTitle")}
                   </CardTitle>
                   <Badge className={severityColors[result.severity]}>
-                    {result.severity} Severity
+                    {t(`advisory.risk.${result.severity}`) || result.severity} {t("detect.severity")}
                   </Badge>
                 </div>
               </CardHeader>
@@ -144,7 +154,7 @@ export default function DiseaseDetectPage() {
                 <div>
                   <h3 className="text-lg font-bold text-foreground">{result.diseaseName}</h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <div className="text-xs text-muted-foreground">Confidence:</div>
+                    <div className="text-xs text-muted-foreground">{t("detect.confidence")}</div>
                     <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full bg-emerald-500 rounded-full"
@@ -162,7 +172,7 @@ export default function DiseaseDetectPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Pill className="h-4 w-4 text-blue-500" />
-                  Recommended Treatment
+                  {t("detect.treatment")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -181,7 +191,7 @@ export default function DiseaseDetectPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Shield className="h-4 w-4 text-emerald-500" />
-                  Preventive Measures
+                  {t("detect.preventive")}
                 </CardTitle>
               </CardHeader>
               <CardContent>

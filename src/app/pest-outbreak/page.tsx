@@ -10,8 +10,10 @@ import { REGION_LIST, SEASON_LIST } from "@/lib/types";
 import type { PestOutbreakResult } from "@/lib/types";
 import { Bug, Loader2, MapPin, ShieldAlert, AlertTriangle, History } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function PestOutbreakPage() {
+  const { t } = useTranslation();
   const [region, setRegion] = useState("Punjab");
   const [season, setSeason] = useState("Kharif");
   const [temperature, setTemperature] = useState(30);
@@ -45,9 +47,9 @@ export default function PestOutbreakPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Pest & Disease Outbreak Forecasting</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("pest.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Regional outbreak risk prediction with district-level alerts. Predict before it spreads.
+          {t("pest.subtitle")}
         </p>
       </div>
 
@@ -55,36 +57,36 @@ export default function PestOutbreakPage() {
         <CardContent className="pt-6 space-y-5">
           <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Region</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("advisory.regionLabel")}</label>
               <Select value={region} onValueChange={setRegion}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{REGION_LIST.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                <SelectContent>{REGION_LIST.map((r) => <SelectItem key={r} value={r}>{t(`regions.${r}`)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Season</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("advisory.seasonLabel")}</label>
               <Select value={season} onValueChange={setSeason}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                <SelectContent>{SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{t(`seasons.${s}`)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Temperature: {temperature}°C</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("risk.tempLabel")}: {temperature}°C</label>
               <Slider value={[temperature]} onValueChange={([v]) => setTemperature(v)} min={10} max={48} step={1} />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Humidity: {humidity}%</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("risk.humidityLabel")}: {humidity}%</label>
               <Slider value={[humidity]} onValueChange={([v]) => setHumidity(v)} min={20} max={100} step={1} />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Recent Rainfall: {rainfall}mm</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("risk.rainfallLabel")}: {rainfall}mm</label>
               <Slider value={[rainfall]} onValueChange={([v]) => setRainfall(v)} min={0} max={100} step={1} />
             </div>
           </div>
           <Button onClick={analyze} disabled={loading} className="bg-orange-600 hover:bg-orange-700 text-white">
-            {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Forecasting...</> : "Forecast Pest Outbreak"}
+            {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("pest.btnForecasting")}</> : t("pest.btnForecast")}
           </Button>
         </CardContent>
       </Card>
@@ -97,7 +99,7 @@ export default function PestOutbreakPage() {
               <CardContent className="pt-5 pb-5 text-center">
                 <Bug className="h-7 w-7 mx-auto text-orange-500 mb-2" />
                 <div className="text-3xl font-bold">{result.outbreakProbability}%</div>
-                <p className="text-xs text-muted-foreground mt-1">Outbreak Probability</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("pest.prob")}</p>
                 <Progress value={result.outbreakProbability} className="mt-2 h-2" />
               </CardContent>
             </Card>
@@ -105,9 +107,9 @@ export default function PestOutbreakPage() {
               <CardContent className="pt-5 pb-5 text-center">
                 <ShieldAlert className="h-7 w-7 mx-auto text-red-500 mb-2" />
                 <Badge className={`text-sm px-3 py-1 ${zoneColors[result.riskZone]}`}>
-                  {result.riskZone} Risk Zone
+                  {result.riskZone} {t("pest.riskZone")}
                 </Badge>
-                <p className="text-xs text-muted-foreground mt-2">Regional Classification</p>
+                <p className="text-xs text-muted-foreground mt-2">{t("pest.regClass")}</p>
               </CardContent>
             </Card>
             <Card>
@@ -124,7 +126,7 @@ export default function PestOutbreakPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-orange-500" />
-                  Crops at Risk
+                  {t("pest.cropsAtRisk")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -150,7 +152,7 @@ export default function PestOutbreakPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-red-500" />
-                  District-Level Alerts
+                  {t("pest.distAlerts")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -170,7 +172,7 @@ export default function PestOutbreakPage() {
           {/* Preventive Advisory */}
           <Card className="bg-orange-50 border-orange-200">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-orange-800">Preventive Advisory</CardTitle>
+              <CardTitle className="text-sm font-medium text-orange-800">{t("pest.prevAdvisory")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
