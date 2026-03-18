@@ -358,11 +358,26 @@ export function simulateProfitPrediction(input: ProfitPredictionInput): ProfitPr
 
 // ─── Price Forecast & Sell/Store Decision ───
 
+// Crop-specific trend bias: durable crops tend to appreciate in storage,
+// perishables tend to lose value quickly.
+const CROP_TREND_BIAS: Record<string, number> = {
+  Rice: 0.65, Wheat: 0.60, Maize: 0.58, Soybean: 0.62, Groundnut: 0.60,
+  Cotton: 0.55, Sugarcane: 0.50,
+  Tomato: 0.30, Potato: 0.35, Onion: 0.38,
+};
+
 export function simulatePriceForecast(input: PriceForecastInput): PriceForecastResult {
-  const seed = `${input.cropType}-${input.region}-price`;
+  // Seed includes all user inputs + today's date so:
+  // - different inputs → different decision
+  // - same inputs on a different day → refreshed decision (feels live)
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const seed = `${input.cropType}-${input.region}-${Math.round(input.currentPrice)}-${Math.round(input.quantityQuintals)}-${Math.round(input.storageCostPerDay)}-${today}`;
 
   // Generate price timeline (30 days)
-  const trend = seededRandom(seed, 1) > 0.4 ? 1 : -1;
+  // Use crop-specific bias so durable crops often trend up, perishables often trend down
+  const trendBias = CROP_TREND_BIAS[input.cropType] ?? 0.5;
+  const trendSeed = seededRandom(`${input.cropType}-${input.region}-${today}`, 7);
+  const trend = trendSeed > (1 - trendBias) ? 1 : -1;
   const volatility = ["Tomato", "Onion", "Potato"].includes(input.cropType) ? 0.04 : 0.015;
 
   const timeline: { day: number; price: number }[] = [];

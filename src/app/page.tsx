@@ -167,25 +167,8 @@ export default function DashboardPage() {
               <label className="text-sm font-semibold text-[#3d1f0a]">
                 {t("dashboard.crop")}
               </label>
-              <div className="flex flex-wrap gap-2">
-                {CROP_LIST.slice(0, 6).map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setCropType(c)}
-                    className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-[15px] font-medium transition-all border-2 ${
-                      cropType === c
-                        ? "bg-[#16a34a] text-[#fdf6e3] border-[#16a34a]"
-                        : "bg-[#faf4e8] text-[#3d1f0a] border-[rgba(61,31,10,0.15)] hover:border-[#16a34a]/50"
-                    }`}
-                  >
-                    <span>{cropEmoji[c] || "🌱"}</span>
-                    {t(`crops.${c}`)}
-                  </button>
-                ))}
-              </div>
               <Select value={cropType} onValueChange={setCropType}>
-                <SelectTrigger className="w-[200px] h-12 rounded-[20px] bg-[#faf4e8] border-2 border-[rgba(61,31,10,0.15)] text-[#3d1f0a] text-[15px] focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/30 mt-2">
+                <SelectTrigger className="w-[200px] h-12 rounded-[20px] bg-[#faf4e8] border-2 border-[rgba(61,31,10,0.15)] text-[#3d1f0a] text-[15px] focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/30">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

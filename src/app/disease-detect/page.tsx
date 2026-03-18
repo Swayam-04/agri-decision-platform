@@ -127,15 +127,6 @@ export default function DiseaseDetectPage() {
               )}
             </Button>
 
-            {/* Demo helper */}
-            {!imagePreview && (
-              <div className="bg-blue-50 rounded-lg p-3">
-                <p className="text-xs text-blue-800 font-medium">{t("detect.demoTip")}</p>
-                <p className="text-[11px] text-blue-600 mt-0.5">
-                  {t("detect.demoDesc")}
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
