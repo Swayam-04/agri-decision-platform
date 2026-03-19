@@ -455,4 +455,20 @@
   "voice.tip": "युक्ति: अपनी GROQ_API_KEY और मॉडल सेटिंग्स की जाँच करें, फिर देव सर्वर को पुनरारंभ करें।",
   "voice.title": "किसान बॉट वॉयस असिस्टेंट",
   "voice.unsupported": "आपका ब्राउज़र वॉयस का समर्थन नहीं करता है।"
+,
+  "reports.title": "रिपोर्ट और अलर्ट",
+  "reports.subtitle": "विश्लेषणात्मक पीडीएफ रिपोर्ट डाउनलोड करें और मैन्युअल एसएमएस प्रसारण प्रबंधित करें।",
+  "reports.tabReports": "रिपोर्ट",
+  "reports.availableReports": "उपलब्ध रिपोर्ट",
+  "reports.type.disease": "रोग विश्लेषण रिपोर्ट",
+  "reports.type.market": "बाजार मूल्य अंतर्दृष्टि",
+  "reports.type.irrigation": "स्मार्ट सिंचाई ऑडिट",
+  "reports.customReport": "कस्टम रिपोर्ट जेनरेट करें",
+  "reports.selectType": "रिपोर्ट प्रकार",
+  "reports.selectRange": "तारीख सीमा",
+  "reports.last7Days": "पिछले 7 दिन",
+  "reports.last30Days": "पिछले 30 दिन",
+  "reports.fullSeason": "वर्तमान सीजन",
+  "reports.downloading": "बना रहा है...",
+  "reports.generateBtn": "पीडीएफ रिपोर्ट डाउनलोड करें"
 }

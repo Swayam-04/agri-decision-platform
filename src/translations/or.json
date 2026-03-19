@@ -455,4 +455,20 @@
   "voice.tip": "ଟିପ୍: ଆପଣଙ୍କର GROQ_API_KEY ଏବଂ ମଡେଲ୍ ସେଟିଂସମୂହ ଯାଞ୍ଚ କରନ୍ତୁ, ତା’ପରେ ଦେଭ୍ ସର୍ଭରକୁ ପୁନର୍ବାର ଆରମ୍ଭ କରନ୍ତୁ |",
   "voice.title": "କିସାନ୍ ବୋଟ୍ ଭଏସ୍ ଆସିଷ୍ଟାଣ୍ଟ୍",
   "voice.unsupported": "ଏହି ବ୍ରାଉଜର୍ ରେ ସମର୍ଥିତ ନୁହେଁ।"
+,
+  "reports.title": "ରିପୋର୍ଟ ଏବଂ ଆଲର୍ଟ",
+  "reports.subtitle": "ବିଶ୍ଳେଷଣାତ୍ମକ PDF ରିପୋର୍ଟ ଡାଉନଲୋଡ୍ କରନ୍ତୁ ଏବଂ ମାନୁଆଲ୍ SMS ପରିଚାଳନା କରନ୍ତୁ |",
+  "reports.tabReports": "ରିପୋର୍ଟ",
+  "reports.availableReports": "ଉପଲବ୍ଧ ରିପୋର୍ଟ",
+  "reports.type.disease": "ରୋଗ ବିଶ୍ଳେଷଣ ରିପୋର୍ଟ",
+  "reports.type.market": "ବଜାର ମୂଲ୍ୟ ସୂଚନା",
+  "reports.type.irrigation": "ସ୍ମାର୍ଟ ଜଳସେଚନ ଅଡିଟ୍",
+  "reports.customReport": "କଷ୍ଟମ୍ ରିପୋର୍ଟ ପ୍ରସ୍ତୁତ କରନ୍ତୁ",
+  "reports.selectType": "ରିପୋର୍ଟ ପ୍ରକାର",
+  "reports.selectRange": "ତାରିଖ ପରିସର",
+  "reports.last7Days": "ଶେଷ ୭ ଦିନ",
+  "reports.last30Days": "ଶେଷ ୩୦ ଦିନ",
+  "reports.fullSeason": "ଚଳିତ ସିଜନ୍",
+  "reports.downloading": "ପ୍ରସ୍ତୁତ ହେଉଛି...",
+  "reports.generateBtn": "PDF ରିପୋର୍ଟ ଡାଉନଲୋଡ୍ କରନ୍ତୁ"
 }
