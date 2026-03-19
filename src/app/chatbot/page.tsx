@@ -4,17 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CROP_LIST, REGION_LIST, SEASON_LIST } from "@/lib/types";
 import type { ChatMessage } from "@/lib/types";
 import { Bot, User, Send, Loader2, Sparkles } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ChatbotPage() {
   const { t, language } = useTranslation();
-  const [cropType, setCropType] = useState("Rice");
-  const [region, setRegion] = useState("Punjab");
-  const [season, setSeason] = useState("Kharif");
+  const [cropType] = useState("Rice");
+  const [region] = useState("Punjab");
+  const [season] = useState("Kharif");
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -84,26 +82,7 @@ export default function ChatbotPage() {
         </p>
       </div>
 
-      {/* Context Bar */}
-      <Card>
-        <CardContent className="pt-4 pb-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs text-muted-foreground">{t("chat.context")}</span>
-            <Select value={cropType} onValueChange={setCropType}>
-              <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>{CROP_LIST.map((c) => <SelectItem key={c} value={c}>{t(`crops.${c}`)}</SelectItem>)}</SelectContent>
-            </Select>
-            <Select value={region} onValueChange={setRegion}>
-              <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>{REGION_LIST.map((r) => <SelectItem key={r} value={r}>{t(`regions.${r}`)}</SelectItem>)}</SelectContent>
-            </Select>
-            <Select value={season} onValueChange={setSeason}>
-              <SelectTrigger className="w-[110px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>{SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{t(`seasons.${s}`)}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Chat Area */}
       <Card className="h-[500px] flex flex-col">

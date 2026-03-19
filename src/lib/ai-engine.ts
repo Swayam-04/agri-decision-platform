@@ -24,6 +24,8 @@ import type {
   ChatbotResult,
 } from "./types";
 
+import { CROP_LIST, REGION_LIST, SEASON_LIST } from "./types";
+
 // Seeded randomness for reproducibility given inputs
 function hash(str: string): number {
   let h = 0;
@@ -107,8 +109,21 @@ const DISEASE_DB: Record<string, { diseases: { name: string; severity: "Low" | "
 
 
 function tLocale(lang: string | undefined, templateId: string, vars: Record<string, any>): string {
-  if (lang === 'hi') {
+  const isHi = lang === 'hi';
+  const isOr = lang === 'or';
+
+  if (isHi) {
     switch(templateId) {
+      // Chatbot specific
+      case 'chat_disease': return `वर्तमान ${vars.season} के दौरान ${vars.region} में, ${vars.crop} के लिए ${vars.riskLevel} रोग जोखिम (${vars.risk}%) है। प्रमुख बीमारियाँ: ${vars.diseases}। सलाह: ${vars.rec}`;
+      case 'chat_profit': return `${vars.season} (${vars.region}) में ${vars.crop} के लिए: प्रति एकड़ अनुमानित उपज ${vars.yield} ${vars.unit} है। संभावित शुद्ध लाभ: ${vars.profit} प्रति एकड़। बाजार भाव: ${vars.price}/क्विंटल।`;
+      case 'chat_market': return `${vars.region} में ${vars.crop} के लिए बाजार सलाह: ${vars.decision}। ${vars.reason}`;
+      case 'chat_water': return `${vars.region} में ${vars.crop} के लिए सिंचाई सलाह: ${vars.moist}% मिट्टी की नमी। ${vars.need}। सुझाव: ${vars.rec}`;
+      case 'chat_pest': return `${vars.region} में ${vars.crop} के लिए कीट आउटलुक: ${vars.risk}। मुख्य कीट: ${vars.pests}। सलाह: ${vars.rec}`;
+      case 'chat_weather': return `${vars.region} में ${vars.season} के दौरान कृषि पर मौसम का प्रभाव: ${vars.insight}`;
+      case 'chat_advisory': return `${vars.region} में ${vars.season} के लिए फसल सलाह: सुरक्षित फसलें: ${vars.safe}। इनसे बचें: ${vars.avoid}।`;
+      case 'chat_default': return `मैं "${vars.input}" के बारे में समझता हूँ। यहाँ बताया गया है कि मैं ${vars.crop} (${vars.region}) के लिए कैसे मदद कर सकता हूँ:\n\n1. बीमारी की जानकारी (रोग)\n2. लाभ अनुमान (मुनाफा)\n3. बाजार सलाह (बेचना/स्टोर)\n4. सिंचाई मार्गदर्शन (पानी)\n\nकृपया विशिष्ट प्रश्न पूछें!`;
+      
       case 'High Humidity': return 'उच्च आर्द्रता';
       case 'Humidity': return 'आर्द्रता';
       case 'Temperature Stress': return 'तापमान तनाव';
@@ -392,8 +407,18 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'High': return 'उच्च';
       default: return templateId;
     }
-  } else if (lang === 'or') {
+  } else if (isOr) {
     switch(templateId) {
+      // Chatbot specific
+      case 'chat_disease': return `ବର୍ତ୍ତମାନର ${vars.season} ସମୟରେ ${vars.region} ରେ, ${vars.crop} ପାଇଁ ${vars.riskLevel} ରୋଗ ଆଶଙ୍କା (${vars.risk}%) ଅଛି | ମୁଖ୍ୟ ରୋଗ: ${vars.diseases} | ପରାମର୍ଶ: ${vars.rec}`;
+      case 'chat_profit': return `${vars.season} (${vars.region}) ରେ ${vars.crop} ପାଇଁ: ଏକର ପିଛା ଆନୁମାନିକ ଅମଳ ${vars.yield} ${vars.unit} ଅଟେ | ସମ୍ଭାବ୍ୟ ନିଟ୍ ଲାଭ: ଏକର ପିଛା ${vars.profit} | ବଜାର ଦର: ${vars.price}/କ୍ୱିଣ୍ଟାଲ୍ |`;
+      case 'chat_market': return `${vars.region} ରେ ${vars.crop} ପାଇଁ ବଜାର ପରାମର୍ଶ: ${vars.decision} | ${vars.reason}`;
+      case 'chat_water': return `${vars.region} ରେ ${vars.crop} ପାଇଁ ଜଳସେଚନ ପରାମର୍ଶ: ${vars.moist}% ମୃତ୍ତିକା ଆର୍ଦ୍ରତା | ${vars.need} | ପରାମର୍ଶ: ${vars.rec}`;
+      case 'chat_pest': return `${vars.region} ରେ ${vars.crop} ପାଇଁ କୀଟ ଆଉଟଲୁକ୍: ${vars.risk} | ମୁଖ୍ୟ କୀଟ: ${vars.pests} | ପରାମର୍ଶ: ${vars.rec}`;
+      case 'chat_weather': return `${vars.region} ରେ ${vars.season} ସମୟରେ କୃଷି ଉପରେ ପାଣିପାଗର ପ୍ରଭାବ: ${vars.insight}`;
+      case 'chat_advisory': return `${vars.region} ରେ ${vars.season} ପାଇଁ ଫସଲ ପରାମର୍ଶ: ସୁରକ୍ଷିତ ଫସଲ: ${vars.safe} | ଏହି ସବୁଠାରୁ ଦୂରେଇ ରୁହନ୍ତୁ: ${vars.avoid} |`;
+      case 'chat_default': return `ମୁଁ "${vars.input}" ବିଷୟରେ ବୁଝୁଛି | ଏଠାରେ ${vars.crop} (${vars.region}) ପାଇଁ ମୁଁ କିପରି ସାହାଯ୍ୟ କରିପାରିବି ସେ ବିଷୟରେ ଦିଆଯାଇଛି:\n\n1. ରୋଗ ସୂଚନା (ରୋଗ)\n2. ଲାଭ ଆକଳନ (ଲାଭ)\n3. ବଜାର ପରାମର୍ଶ (ବିକ୍ରି/ସଂରକ୍ଷଣ)\n4. ଜଳସେଚନ ମାର୍ଗଦର୍ଶନ (ପାଣି)\n\nଦୟାକରି ନିର୍ଦ୍ଦିଷ୍ଟ ପ୍ରଶ୍ନ ପଚାରନ୍ତୁ!`;
+
       case 'High Humidity': return 'ଅଧିକ ଆର୍ଦ୍ରତା';
       case 'Humidity': return 'ଆର୍ଦ୍ରତା';
       case 'Temperature Stress': return 'ତାପମାତ୍ରା ଚାପ';
@@ -702,15 +727,31 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
     case 'ir_light': return `Soil is slightly dry at ${vars.moist}%. A light irrigation of ${vars.water} liters per acre is recommended. Use drip or sprinkler for best results.`;
     case 'ir_heavy': return `Soil moisture is critically low at ${vars.moist}%. Immediate heavy irrigation of ${vars.water} liters per acre needed. Start pump now to prevent crop stress.`;
     case 'ir_action_no': return 'No irrigation needed';
-    case 'ir_action_light': return 'Light watering';
-    case 'ir_action_full': return 'Full irrigation cycle';
-    case 'Healthy': return 'Healthy';
-    case 'Healthy_desc': return `Your ${vars.crop} crop appears to be healthy and free from significant diseases.`;
-    case 'Healthy_prev1': return 'Continue regular field monitoring';
-    case 'Healthy_prev2': return 'Maintain balanced nutrition and irrigation';
+    case 'chat_disease': return `Based on current ${vars.season} in ${vars.region}, ${vars.crop} has ${vars.riskLevel} disease risk (${vars.risk}%). Top diseases: ${vars.diseases}. Advisory: ${vars.rec}`;
+    case 'chat_profit': return `For ${vars.crop} in ${vars.region} (${vars.season}): Estimated yield is ${vars.yield} ${vars.unit}/acre. Potential profit: ${vars.profit} per acre. Market price: ${vars.price}/q.`;
+    case 'chat_market': return `Market advice for ${vars.crop} in ${vars.region}: ${vars.decision}. ${vars.reason}`;
+    case 'chat_water': return `Irrigation advice for ${vars.crop} in ${vars.region}: ${vars.moist}% soil moisture. ${vars.need}. Recommendation: ${vars.rec}`;
+    case 'chat_pest': return `Pest outlook for ${vars.crop} in ${vars.region}: ${vars.risk} probability. Key pests: ${vars.pests}. Advice: ${vars.rec}`;
+    case 'chat_weather': return `Weather impact on ${vars.season} farming in ${vars.region}: ${vars.insight}`;
+    case 'chat_advisory': return `Crop advisory for ${vars.region} during ${vars.season}: Safe crops: ${vars.safe}. Avoid: ${vars.avoid}.`;
+    case 'chat_default': return `I understand you're asking about "${vars.input}". Here's what I can help with for ${vars.crop} in ${vars.region}:\n\n1. Disease info\n2. Profit estimates\n3. Market advice\n4. Irrigation guidance\n\nTry asking a specific question!`;
+    default: return templateId;
   }
-  return templateId;
 }
+
+const CROP_ENTITY_MAP: Record<string, string> = {
+  'Rice': 'Rice', 'चावल': 'Rice', 'ଧାନ': 'Rice',
+  'Wheat': 'Wheat', 'गेहूँ': 'Wheat', 'ଗହମ': 'Wheat',
+  'Maize': 'Maize', 'मक्का': 'Maize', 'ମକ୍କା': 'Maize',
+  'Cotton': 'Cotton', 'कपास': 'Cotton', 'କପା': 'Cotton',
+  'Sugarcane': 'Sugarcane', 'गन्ना': 'Sugarcane', 'ଆଖୁ': 'Sugarcane',
+  'Soybean': 'Soybean', 'सोयाबीन': 'Soybean', 'ସୋୟାବିନ୍': 'Soybean',
+  'Groundnut': 'Groundnut', 'मूंगफली': 'Groundnut', 'ଚିନାବାଦାମ': 'Groundnut',
+  'Tomato': 'Tomato', 'टमाटर': 'Tomato', 'ଟମାଟୋ': 'Tomato',
+  'Potato': 'Potato', 'आलू': 'Potato', 'ଆଳୁ': 'Potato', 'potatoes': 'Potato',
+  'Onion': 'Onion', 'प्याज': 'Onion', 'ପିଆଜ': 'Onion',
+  'Pepper': 'Pepper', 'काली मिर्च': 'Pepper', 'ଗୋଲମରିଚ': 'Pepper'
+};
 
 export function simulateDiseaseDetection(cropType: string, language?: string): DiseaseDetectionResult {
   const seed = cropType + Date.now().toString().slice(-4);
@@ -1522,37 +1563,139 @@ const CHATBOT_KNOWLEDGE: { patterns: RegExp[]; getResponse: (crop: string, regio
 ];
 
 export function simulateChatbot(input: ChatbotInput): ChatbotResult {
-  const crop = input.cropType || "Rice";
-  const region = input.region || "Punjab";
-  const season = input.season || "Kharif";
+  let crop = input.cropType || "Rice";
+  let region = input.region || "Punjab";
+  let season = input.season || "Kharif";
   const message = input.message.toLowerCase();
+  const lang = input.language;
 
-  // Match against knowledge base
-  for (const entry of CHATBOT_KNOWLEDGE) {
-    if (entry.patterns.some(p => p.test(message))) {
-      let reply = entry.getResponse(crop, region, season);
-      // Basic localization for common responses if lang is hi or or
-      if (input.language === 'hi' || input.language === 'or') {
-        // We could use tLocale for the entire string if we had templates,
-        // but for now let's just use it for the placeholders
-        const locCrop = tLocale(input.language, crop, {});
-        const locRegion = tLocale(input.language, region, {});
-        const locSeason = tLocale(input.language, season, {});
-        // If we want full translation, we'd need to add these to tLocale
-        // For brevity in this simulation, we'll keep the structure but note localization
-      }
-      
-      return {
-        reply,
-        suggestions: getSuggestions(message, input.language),
-      };
+  // 1. Dynamic entity detection (handles Hindi/Odia names too)
+  for (const [key, value] of Object.entries(CROP_ENTITY_MAP)) {
+    if (message.includes(key.toLowerCase())) {
+      crop = value;
+      break;
     }
   }
+  const detectedRegion = REGION_LIST.find(r => message.includes(r.toLowerCase()));
+  if (detectedRegion) region = detectedRegion;
+  const detectedSeason = SEASON_LIST.find(s => message.includes(s.toLowerCase()));
+  if (detectedSeason) season = detectedSeason;
 
-  // Default response
+  // 2. Specialized Categorical Responses
+  
+  // Disease
+  if (/disease|blight|infection|sick|bimar|rog|beemari/i.test(message)) {
+    const risk = simulateDiseaseRisk({ cropType: crop, region, season, language: lang, temperature: 28, humidity: 75, rainfall: 10 });
+    return {
+      reply: tLocale(lang, 'chat_disease', {
+        crop: tLocale(lang, crop, {}),
+        season: tLocale(lang, season, {}),
+        region: tLocale(lang, region, {}),
+        riskLevel: tLocale(lang, risk.riskLevel, {}),
+        risk: risk.riskPercentage,
+        diseases: risk.topDiseases.map(d => d.name).join(", "),
+        rec: risk.recommendation
+      }),
+      suggestions: getSuggestions(message, lang)
+    };
+  }
+
+  // Profit/Earnings
+  if (/profit|earn|money|income|kamai|munafa|labha/i.test(message)) {
+    const profit = simulateProfitPrediction({ cropType: crop, region, season, acreage: 1, soilType: "Loamy", irrigationType: "Drip", language: lang });
+    return {
+      reply: tLocale(lang, 'chat_profit', {
+        crop: tLocale(lang, crop, {}),
+        season: tLocale(lang, season, {}),
+        region: tLocale(lang, region, {}),
+        yield: Math.round(profit.expectedYieldPerAcre),
+        unit: tLocale(lang, profit.yieldUnit, {}),
+        profit: `Rs ${profit.profitPerAcre.toLocaleString()}`,
+        price: profit.expectedMarketPrice
+      }),
+      suggestions: getSuggestions(message, lang)
+    };
+  }
+
+  // Sell/Store/Market
+  if (/sell|store|market|price|bech|rakh|mandi|bazar/i.test(message)) {
+    const price = simulatePriceForecast({ cropType: crop, region, currentPrice: 2200, quantityQuintals: 20, storageCostPerDay: 2, language: lang });
+    return {
+      reply: tLocale(lang, 'chat_market', {
+        crop: tLocale(lang, crop, {}),
+        region: tLocale(lang, region, {}),
+        decision: tLocale(lang, price.decision, {}),
+        reason: price.reasoning
+      }),
+      suggestions: getSuggestions(message, lang)
+    };
+  }
+
+  // Water/Irrigation
+  if (/water|irrigat|paani|sinchai|jala/i.test(message)) {
+    const irrigation = simulateIrrigation({ cropType: crop, region, soilType: "Loamy", temperature: 30, humidity: 65, recentRainfall: 5, season, language: lang });
+    return {
+      reply: tLocale(lang, 'chat_water', {
+        crop: tLocale(lang, crop, {}),
+        region: tLocale(lang, region, {}),
+        moist: irrigation.soilMoisturePercent,
+        need: tLocale(lang, irrigation.irrigationNeed, {}),
+        rec: irrigation.recommendation
+      }),
+      suggestions: getSuggestions(message, lang)
+    };
+  }
+
+  // Pest
+  if (/pest|keeda|insect|outbreak|poka/i.test(message)) {
+    const pest = simulatePestOutbreak({ region, season, temperature: 28, humidity: 75, recentRainfall: 10, language: lang });
+    return {
+      reply: tLocale(lang, 'chat_pest', {
+        crop: tLocale(lang, crop, {}),
+        region: tLocale(lang, region, {}),
+        risk: tLocale(lang, pest.riskZone, {}),
+        pests: pest.affectedCrops.filter(c => c.crop.includes(crop) || c.crop === crop).map(c => c.pest).join(", ") || tLocale(lang, "Aphids", {}),
+        rec: pest.preventiveAdvisory[0]
+      }),
+      suggestions: getSuggestions(message, lang)
+    };
+  }
+
+  // Weather
+  if (/weather|rain|barish|mausam|panipaga/i.test(message)) {
+    const advisory = simulateRiskAdvisory({ region, season, language: lang });
+    return {
+      reply: tLocale(lang, 'chat_weather', {
+        region: tLocale(lang, region, {}),
+        season: tLocale(lang, season, {}),
+        insight: advisory.seasonalInsight
+      }),
+      suggestions: getSuggestions(message, lang)
+    };
+  }
+
+  // Advisory (What to grow)
+  if (/what.*grow|kya.*ugau|kaun.*fasal|kana.*chasa/i.test(message)) {
+    const advisory = simulateRiskAdvisory({ region, season, language: lang });
+    return {
+      reply: tLocale(lang, 'chat_advisory', {
+        region: tLocale(lang, region, {}),
+        season: tLocale(lang, season, {}),
+        safe: advisory.safeCrops.map(c => c.name).join(", "),
+        avoid: advisory.cropsToAvoid.slice(0, 2).map(c => c.cropName).join(", ")
+      }),
+      suggestions: getSuggestions(message, lang)
+    };
+  }
+
+  // Default response with localization
   return {
-    reply: `I understand you're asking about "${input.message}". Here's what I can help with for ${crop} in ${region}:\n\n1. Type "disease" for disease risk info\n2. Type "profit" for earning estimates\n3. Type "sell" for market advice\n4. Type "water" for irrigation guidance\n5. Type "pest" for pest alerts\n6. Type "what to grow" for crop recommendations\n\nTry asking a specific question and I'll give you detailed advice!`,
-    suggestions: ["What diseases affect my crop?", "How much profit can I expect?", "Should I sell or store?", "Is pest risk high?"],
+    reply: tLocale(lang, 'chat_default', {
+      input: input.message,
+      crop: tLocale(lang, crop, {}),
+      region: tLocale(lang, region, {})
+    }),
+    suggestions: getSuggestions(message, lang),
   };
 }
 

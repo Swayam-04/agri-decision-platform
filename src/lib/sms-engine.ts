@@ -70,19 +70,47 @@ interface GatewayResponse {
 
 // Twilio Gateway
 async function sendViaTwilio(phone: string, message: string, config: SmsGatewayConfig): Promise<GatewayResponse> {
-  if (!config.apiKey || !config.apiSecret) {
-    return { success: false, errorCode: "AUTH_MISSING", errorMessage: "Twilio credentials not configured. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN." };
+  const accountSid = config.apiKey; // TWILIO_ACCOUNT_SID
+  const authToken = config.apiSecret; // TWILIO_AUTH_TOKEN
+  const fromPhone = process.env.TWILIO_PHONE_NUMBER;
+
+  if (!accountSid || !authToken || !fromPhone) {
+    return { 
+      success: false, 
+      errorCode: "AUTH_MISSING", 
+      errorMessage: "Twilio credentials (SID, Token, or Phone) not configured." 
+    };
   }
 
   try {
-    // In production: call Twilio REST API
-    // POST https://api.twilio.com/2010-04-01/Accounts/{SID}/Messages.json
-    // For now, simulate the call
-    const simulatedSuccess = Math.random() > 0.05; // 95% success rate simulation
-    if (simulatedSuccess) {
-      return { success: true, messageId: `TW-${Date.now()}` };
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const auth = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
+    
+    const params = new URLSearchParams();
+    params.append("To", phone);
+    params.append("From", fromPhone);
+    params.append("Body", message);
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params,
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return { success: true, messageId: data.sid };
+    } else {
+      return { 
+        success: false, 
+        errorCode: data.code?.toString() || "TWILIO_ERROR", 
+        errorMessage: data.message || "Twilio API error" 
+      };
     }
-    return { success: false, errorCode: "TWILIO_ERR_21608", errorMessage: "Simulated: Unverified destination number" };
   } catch (err) {
     return { success: false, errorCode: "NETWORK_ERROR", errorMessage: `Twilio API error: ${err}` };
   }
@@ -151,9 +179,10 @@ export function getDefaultGatewayConfig(): SmsGatewayConfig {
   // Check environment variables for real gateway config
   const twilioSid = process.env.TWILIO_ACCOUNT_SID;
   const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
+  const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
   const govtKey = process.env.GOVT_SMS_API_KEY;
 
-  if (twilioSid && twilioAuth) {
+  if (twilioSid && twilioAuth && twilioPhone) {
     return { provider: "twilio", apiKey: twilioSid, apiSecret: twilioAuth, senderId: "CROPAI" };
   }
   if (govtKey) {
