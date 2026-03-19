@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CROP_LIST } from "@/lib/types";
@@ -55,6 +56,7 @@ export default function DiseaseDetectPage() {
     Low: "bg-emerald-100 text-emerald-700",
     Medium: "bg-yellow-100 text-yellow-700",
     High: "bg-red-100 text-red-700",
+    Healthy: "bg-emerald-100 text-emerald-700",
   };
 
   return (
@@ -134,15 +136,22 @@ export default function DiseaseDetectPage() {
         {/* Results Panel */}
         {result && (
           <div className="space-y-4">
-            <Card className="border-l-4 border-l-red-400">
+            <Card className={cn(
+              "border-l-4",
+              result.severity === "Healthy" ? "border-l-emerald-400" : "border-l-red-400"
+            )}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-red-500" />
+                    {result.severity === "Healthy" ? (
+                      <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-red-500" />
+                    )}
                     {t("detect.resultTitle")}
                   </CardTitle>
                   <Badge className={severityColors[result.severity]}>
-                    {t(`advisory.risk.${result.severity}`) || result.severity} {t("detect.severity")}
+                    {t(`advisory.risk.${result.severity}`) || result.severity} {result.severity !== "Healthy" && t("detect.severity")}
                   </Badge>
                 </div>
               </CardHeader>
@@ -164,24 +173,26 @@ export default function DiseaseDetectPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Pill className="h-4 w-4 text-blue-500" />
-                  {t("detect.treatment")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {result.remedies.map((r, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <ShieldCheck className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                      <span>{r}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            {result.severity !== "Healthy" && result.remedies.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Pill className="h-4 w-4 text-blue-500" />
+                    {t("detect.treatment")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {result.remedies.map((r, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <ShieldCheck className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                        <span>{r}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader className="pb-3">

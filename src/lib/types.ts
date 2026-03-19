@@ -9,7 +9,7 @@ export interface DiseaseDetectionInput {
 
 export interface DiseaseDetectionResult {
   diseaseName: string;
-  severity: "Low" | "Medium" | "High";
+  severity: "Low" | "Medium" | "High" | "Healthy";
   confidence: number;
   description: string;
   remedies: string[];
@@ -96,6 +96,7 @@ export interface RiskAdvisoryInput {
   language?: string;
   region: string;
   season: string;
+  soilType?: string;
 }
 
 export interface RiskAdvisoryResult {
@@ -308,7 +309,8 @@ export type CropType =
   | "Onion"
   | "Maize"
   | "Soybean"
-  | "Groundnut";
+  | "Groundnut"
+  | "Pepper";
 
 export type Region =
   | "Andhra Pradesh"
@@ -346,7 +348,7 @@ export type Season = "Kharif" | "Rabi" | "Zaid";
 
 export const CROP_LIST: CropType[] = [
   "Rice", "Wheat", "Cotton", "Sugarcane", "Tomato",
-  "Potato", "Onion", "Maize", "Soybean", "Groundnut",
+  "Potato", "Onion", "Maize", "Soybean", "Groundnut", "Pepper",
 ];
 
 export const REGION_LIST: Region[] = [
@@ -359,3 +361,15 @@ export const REGION_LIST: Region[] = [
 ];
 
 export const SEASON_LIST: Season[] = ["Kharif", "Rabi", "Zaid"];
+
+export const SOIL_LIST = [
+  "Alluvial",
+  "Black",
+  "Red",
+  "Laterite",
+  "Sandy",
+  "Clay",
+  "Loamy",
+] as const;
+
+export type SoilType = (typeof SOIL_LIST)[number];

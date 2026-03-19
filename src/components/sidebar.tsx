@@ -17,7 +17,7 @@ import {
   Leaf,
   Droplets,
   Bug,
-  MessageSquare,
+  ClipboardList,
   Bot,
   Mic,
   Globe2,
@@ -40,14 +40,14 @@ const navItems = [
   { href: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, descriptionKey: "navDesc.dashboard", description: "Decision Intelligence" },
   { href: "/disease-detect", labelKey: "nav.diseaseDetection", icon: Microscope, descriptionKey: "navDesc.diseaseDetection", description: "Vision AI Analysis" },
   { href: "/disease-risk", labelKey: "nav.diseaseRisk", icon: ShieldAlert, descriptionKey: "navDesc.diseaseRisk", description: "7-10 Day Forecast" },
+  { href: "/pest-outbreak", labelKey: "nav.pestOutbreak", icon: Bug, descriptionKey: "navDesc.pestOutbreak", description: "Regional Forecasting" },
   { href: "/profit-predict", labelKey: "nav.profitPrediction", icon: TrendingUp, descriptionKey: "navDesc.profitPrediction", description: "Yield & Revenue" },
   { href: "/price-forecast", labelKey: "nav.sellStore", icon: Store, descriptionKey: "navDesc.sellStore", description: "Price Forecast" },
   { href: "/risk-advisory", labelKey: "nav.cropAdvisory", icon: AlertTriangle, descriptionKey: "navDesc.cropAdvisory", description: "What NOT to Grow" },
-  { href: "/irrigation", labelKey: "nav.smartIrrigation", icon: Droplets, descriptionKey: "navDesc.smartIrrigation", description: "Water & Pump Control" },
-  { href: "/pest-outbreak", labelKey: "nav.pestOutbreak", icon: Bug, descriptionKey: "navDesc.pestOutbreak", description: "Regional Forecasting" },
-  { href: "/sms-alerts", labelKey: "nav.smsAlerts", icon: MessageSquare, descriptionKey: "navDesc.smsAlerts", description: "Farmer Notifications" },
   { href: "/chatbot", labelKey: "nav.aiAssistant", icon: Bot, descriptionKey: "navDesc.aiAssistant", description: "Ask Anything" },
   { href: "/voice-assistant", labelKey: "nav.voiceAssistant", icon: Mic, descriptionKey: "navDesc.voiceAssistant", description: "Multilingual Mic Chat" },
+  { href: "/sms-alerts", labelKey: "nav.smsAlerts", icon: ClipboardList, descriptionKey: "reports.subtitle", description: "Farm Analysis Reports" },
+  { href: "/irrigation", labelKey: "nav.smartIrrigation", icon: Droplets, descriptionKey: "navDesc.smartIrrigation", description: "Water & Pump Control" },
 ];
 
 function LanguageDropdown() {
@@ -100,9 +100,8 @@ function LanguageDropdown() {
                   <button
                     type="button"
                     onClick={() => handleSelect(lang.code)}
-                    className={`flex w-full items-center justify-between px-3 py-1.5 text-[13px] ${
-                      active ? "bg-[#e8dcc8] font-semibold" : "hover:bg-[#f5ebd9]"
-                    }`}
+                    className={`flex w-full items-center justify-between px-3 py-1.5 text-[13px] ${active ? "bg-[#e8dcc8] font-semibold" : "hover:bg-[#f5ebd9]"
+                      }`}
                   >
                     <span>
                       {lang.native} — {lang.label}
@@ -124,6 +123,55 @@ function LanguageDropdown() {
 export function Sidebar() {
   const pathname = usePathname();
   const { t } = useTranslation();
+
+  const renderNavItems = (items: typeof navItems) => (
+    <div className="space-y-1">
+      {items.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "group relative flex items-center gap-3 rounded-[20px] px-3 py-2.5 text-sm transition-all",
+              isActive
+                ? "bg-[#16a34a] text-[#fdf6e3] font-semibold shadow-md"
+                : "text-[#3d1f0a] hover:bg-[#f5ebd9] border border-transparent"
+            )}
+          >
+            {isActive && (
+              <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#f59e0b]" />
+            )}
+            <span className={cn("flex items-center justify-center", isActive ? "text-[#fdf6e3]" : "text-[#16a34a] group-hover:scale-110 transition-transform hover-leaf")}>
+              <item.icon className="h-4 w-4 shrink-0" />
+            </span>
+            <div className="min-w-0">
+              <div className="leading-tight truncate">{t(item.labelKey)}</div>
+              <div
+                className={cn(
+                  "text-[11px] truncate",
+                  isActive ? "text-[#fdf6e3]/90" : "text-[#6b4423] group-hover:text-[#3d1f0a]"
+                )}
+              >
+                {t(item.descriptionKey)}
+              </div>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+
+  const renderSection = (titleKey: string, items: typeof navItems) => (
+    <div className="space-y-2 pt-2">
+      <h2 className="px-4 text-[11px] font-black uppercase tracking-[0.15em] text-[#16a34a] flex items-center gap-2">
+        <span className="h-[1.5px] flex-1 bg-[rgba(22,163,74,0.15)]" />
+        {t(titleKey)}
+        <span className="h-[1.5px] flex-1 bg-[rgba(22,163,74,0.15)]" />
+      </h2>
+      {renderNavItems(items)}
+    </div>
+  );
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-[rgba(61,31,10,0.12)] bg-[#fdf6e3]">
@@ -149,40 +197,24 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "group relative flex items-center gap-3 rounded-[20px] px-3 py-2.5 text-sm transition-all",
-                  isActive
-                    ? "bg-[#16a34a] text-[#fdf6e3] font-semibold shadow-md"
-                    : "text-[#3d1f0a] hover:bg-[#f5ebd9] border border-transparent"
-                )}
-              >
-                {isActive && (
-                  <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#f59e0b]" />
-                )}
-                <span className={cn("flex items-center justify-center", isActive ? "text-[#fdf6e3]" : "text-[#16a34a] group-hover:scale-110 transition-transform hover-leaf")}>
-                  <item.icon className="h-4 w-4 shrink-0" />
-                </span>
-                <div className="min-w-0">
-                  <div className="leading-tight truncate">{t(item.labelKey)}</div>
-                  <div
-                    className={cn(
-                      "text-[11px] truncate",
-                      isActive ? "text-[#fdf6e3]/90" : "text-[#6b4423] group-hover:text-[#3d1f0a]"
-                    )}
-                  >
-                    {t(item.descriptionKey)}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4 scrollbar-earth">
+          {/* Main (Dashboard) */}
+          {renderNavItems(navItems.slice(0, 1))}
+
+          {/* Pest Detection Section */}
+          {renderSection("nav.pestDetection", navItems.slice(1, 4))}
+
+          {/* Yield & Market Section */}
+          {renderSection("nav.yieldMarket", navItems.slice(4, 7))}
+
+          {/* AI Support Section */}
+          {renderSection("nav.aiSupport", navItems.slice(7, 9))}
+
+          {/* Alerts Section */}
+          {renderSection("dashboard.smsAlerts", navItems.slice(9, 10))}
+
+          {/* Watering Section */}
+          {renderSection("nav.watering", navItems.slice(10))}
         </nav>
 
         {/* Footer */}

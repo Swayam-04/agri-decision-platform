@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { REGION_LIST, SEASON_LIST } from "@/lib/types";
+import { REGION_LIST, SEASON_LIST, SOIL_LIST } from "@/lib/types";
 import type { RiskAdvisoryResult } from "@/lib/types";
 import { AlertTriangle, Loader2, XCircle, CheckCircle2, Info, ShieldAlert } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -14,6 +14,7 @@ export default function RiskAdvisoryPage() {
   const { t, language } = useTranslation();
   const [region, setRegion] = useState("Rajasthan");
   const [season, setSeason] = useState("Kharif");
+  const [soilType, setSoilType] = useState("Alluvial");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RiskAdvisoryResult | null>(null);
 
@@ -23,7 +24,7 @@ export default function RiskAdvisoryPage() {
       const res = await fetch("/api/risk-advisory", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-language": language },
-        body: JSON.stringify({ region, season }),
+        body: JSON.stringify({ region, season, soilType }),
       });
       setResult(await res.json());
     } catch (err) {
@@ -71,6 +72,15 @@ export default function RiskAdvisoryPage() {
                 <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {SEASON_LIST.map((s) => <SelectItem key={s} value={s}>{t(`seasons.${s}`)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">{t("profit.soil") || "Soil Type"}</label>
+              <Select value={soilType} onValueChange={setSoilType}>
+                <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SOIL_LIST.map((s) => <SelectItem key={s} value={s}>{t(`soilType.${s}`) || s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

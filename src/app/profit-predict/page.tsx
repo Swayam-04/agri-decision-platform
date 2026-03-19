@@ -144,16 +144,38 @@ export default function ProfitPredictPage() {
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 text-center">
-                  <p className="text-xs text-muted-foreground dark:text-emerald-100/80">
-                    {t("profit.profitRange")} Rs {result.profitRange.low.toLocaleString("en-IN")} {t("profit.to")} Rs {result.profitRange.high.toLocaleString("en-IN")} {t("profit.perAcre")}
-                  </p>
-                  <p className="text-xs text-muted-foreground dark:text-emerald-100/80 mt-0.5">
-                    {t("profit.for")} {acreage} {t("profit.acres")} Rs {(result.profitPerAcre * parseFloat(acreage)).toLocaleString("en-IN")} {t("profit.totalEst")}
-                  </p>
-                  <Badge variant="outline" className="mt-2 text-xs dark:bg-emerald-900/40 dark:border-emerald-700 dark:text-emerald-100">
-                    {Math.round(result.confidenceScore * 100)}% {t("profit.modelConf")}
-                  </Badge>
+                {/* Prominent Profit Range & Total */}
+                <div className="mt-6 pt-6 border-t border-[rgba(61,31,10,0.1)]">
+                  <div className="bg-white/40 dark:bg-black/20 rounded-2xl p-4 border border-[rgba(61,31,10,0.05)] shadow-sm">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center gap-2 text-[#6b4423] dark:text-emerald-200/80">
+                        <BarChart3 className="h-4 w-4" />
+                        <span className="text-xs font-semibold uppercase tracking-wider">{t("profit.profitRange")}</span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-medium text-muted-foreground">Rs</span>
+                        <span className="text-2xl font-bold text-[#3d1f0a] dark:text-white">
+                          {result.profitRange.low.toLocaleString("en-IN")} — {result.profitRange.high.toLocaleString("en-IN")}
+                        </span>
+                        <span className="text-sm font-medium text-muted-foreground">/{t("profit.perAcre")}</span>
+                      </div>
+
+                      <div className="w-full h-px bg-[rgba(61,31,10,0.1)] my-2" />
+
+                      <div className="flex flex-col items-center">
+                        <p className="text-xs font-bold text-[#6b4423] dark:text-white uppercase tracking-wider opacity-80">
+                          {t("profit.for")} {acreage} {t("profit.acres")} {t("profit.totalEst")}
+                        </p>
+                        <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                          Rs {(result.profitPerAcre * parseFloat(acreage)).toLocaleString("en-IN")}
+                        </p>
+                      </div>
+
+                      <Badge variant="outline" className="mt-3 px-3 py-1 bg-white/60 dark:bg-emerald-950/40 border-emerald-200/50 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold tracking-widest uppercase">
+                        {Math.round(result.confidenceScore * 100)}% {t("profit.modelConf")}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

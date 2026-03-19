@@ -97,6 +97,12 @@ const DISEASE_DB: Record<string, { diseases: { name: string; severity: "Low" | "
       { name: "Tikka Disease (Leaf Spot)", severity: "Medium", description: "Cercospora causing circular brown spots on leaves, leading to defoliation and reduced pod filling.", remedies: ["Apply Carbendazim 50% WP @ 0.5g/L", "Spray Mancozeb at 10-day intervals", "Remove and destroy infected plant debris"], preventive: ["Use resistant varieties", "Seed treatment before sowing", "Maintain proper spacing"] },
     ],
   },
+  Pepper: {
+    diseases: [
+      { name: "Bacterial Wilt", severity: "High", description: "Soil-borne bacterial disease causing rapid wilting and death of the plant.", remedies: ["Remove and destroy infected plants", "Avoid waterlogging", "Use bleaching powder @ 15kg/ha"], preventive: ["Crop rotation with non-solanaceous crops", "Use resistant varieties", "Solarization of nursery beds"] },
+      { name: "Powdery Mildew", severity: "Medium", description: "White powdery growth on leaves, leading to leaf fall and reduced yield.", remedies: ["Spray Sulfex @ 3g/L", "Apply Dinocap @ 1ml/L", "Remove infected plant parts"], preventive: ["Proper spacing for ventilation", "Avoid overhead irrigation", "Keep fields weed-free"] },
+    ],
+  },
 };
 
 
@@ -135,6 +141,10 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'Early Blight': return 'अर्ली ब्लाइट';
       case 'Late Blight': return 'लेट ब्लाइट';
       case 'Leaf Curl Virus': return 'लीफ कर्ल वायरस';
+      case 'Healthy': return 'स्वस्थ';
+      case 'Healthy_desc': return `आपकी ${vars.crop} की फसल स्वस्थ और रोग मुक्त दिखाई देती है।`;
+      case 'Healthy_prev1': return 'नियमित निगरानी जारी रखें';
+      case 'Healthy_prev2': return 'संतुलित उर्वरीकरण और सिंचाई बनाए रखें';
       case 'Cotton Bollworm Damage': return 'कपास बॉलवर्म डैमेज';
       case 'Black Scurf': return 'ब्लैक स्कर्फ';
       case 'Red Rot': return 'रेड रॉट (लाल सड़न)';
@@ -161,6 +171,7 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'Tomato': return 'टमाटर';
       case 'Potato': return 'आलू';
       case 'Onion': return 'प्याज';
+      case 'Pepper': return 'काली मिर्च';
       // Regions
       case 'Punjab': return 'पंजाब';
       case 'Haryana': return 'हरियाणा';
@@ -415,6 +426,10 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'Early Blight': return 'ପ୍ରାରମ୍ଭିକ ବ୍ଲାଇଟ୍ (ଅର୍ଲି ବ୍ଲାଇଟ୍)';
       case 'Late Blight': return 'ବିଳମ୍ବିତ ବ୍ଲାଇଟ୍ (ଲେଟ୍ ବ୍ଲାଇଟ୍)';
       case 'Leaf Curl Virus': return 'ଲିଫ୍ କର୍ଲ ଭାଇରସ୍ (ପତ୍ର ମୋଡ଼ା)';
+      case 'Healthy': return 'ସୁସ୍ଥ';
+      case 'Healthy_desc': return `ଆପଣଙ୍କର ${vars.crop} ଫସଲ ସୁସ୍ଥ ଏବଂ ରୋଗମୁକ୍ତ ଦେଖାଯାଉଛି |`;
+      case 'Healthy_prev1': return 'ନିୟମିତ ନୀରିକ୍ଷଣ ଜାରି ରଖନ୍ତୁ';
+      case 'Healthy_prev2': return 'ସନ୍ତୁଳିତ ସାର ଏବଂ ଜଳସେଚନ ବଜାୟ ରଖନ୍ତୁ';
       case 'Cotton Bollworm Damage': return 'କପା ବୋଲୱର୍ମ କ୍ଷତି';
       case 'Black Scurf': return 'ବ୍ଲାକ୍ ସ୍କର୍ଫ୍';
       case 'Red Rot': return 'ରେଡ୍ ରଟ୍ (ଲାଲ୍ ସଢ଼ା)';
@@ -441,6 +456,7 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'Tomato': return 'ଟମାଟୋ';
       case 'Potato': return 'ଆଳୁ';
       case 'Onion': return 'ପିଆଜ';
+      case 'Pepper': return 'ଗୋଲମରିଚ';
       // Regions
       case 'Punjab': return 'ପଞ୍ଜାବ';
       case 'Haryana': return 'ହରିୟାଣା';
@@ -688,13 +704,33 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
     case 'ir_action_no': return 'No irrigation needed';
     case 'ir_action_light': return 'Light watering';
     case 'ir_action_full': return 'Full irrigation cycle';
+    case 'Healthy': return 'Healthy';
+    case 'Healthy_desc': return `Your ${vars.crop} crop appears to be healthy and free from significant diseases.`;
+    case 'Healthy_prev1': return 'Continue regular field monitoring';
+    case 'Healthy_prev2': return 'Maintain balanced nutrition and irrigation';
   }
   return templateId;
 }
 
 export function simulateDiseaseDetection(cropType: string, language?: string): DiseaseDetectionResult {
-  const db = DISEASE_DB[cropType] || DISEASE_DB["Rice"];
   const seed = cropType + Date.now().toString().slice(-4);
+  const isHealthy = seededRandom(seed, 500) < 0.3; // 30% chance of healthy
+
+  if (isHealthy) {
+    return {
+      diseaseName: tLocale(language, "Healthy", {}),
+      severity: "Healthy",
+      confidence: 0.92 + seededRandom(seed, 501) * 0.06, // 92-98%
+      description: tLocale(language, "Healthy_desc", { crop: tLocale(language, cropType, {}) }),
+      remedies: [],
+      preventiveMeasures: [
+        tLocale(language, "Healthy_prev1", {}),
+        tLocale(language, "Healthy_prev2", {}),
+      ],
+    };
+  }
+
+  const db = DISEASE_DB[cropType] || DISEASE_DB["Rice"];
   const idx = hash(seed) % db.diseases.length;
   const disease = db.diseases[idx];
   const confidence = 0.72 + seededRandom(seed, 1) * 0.23; // 72-95%
@@ -1013,7 +1049,7 @@ const REGION_CLIMATE: Record<string, { avgTemp: number; avgHumidity: number; rai
   "Jammu & Kashmir": { avgTemp: 14, avgHumidity: 58, rainfall: "moderate", suitableCrops: ["Rice", "Wheat", "Maize", "Potato", "Soybean"] },
 };
 
-const ALL_CROPS = ["Rice", "Wheat", "Cotton", "Sugarcane", "Tomato", "Potato", "Onion", "Maize", "Soybean", "Groundnut"];
+const ALL_CROPS = ["Rice", "Wheat", "Cotton", "Sugarcane", "Tomato", "Potato", "Onion", "Maize", "Soybean", "Groundnut", "Pepper"];
 
 export function simulateRiskAdvisory(input: RiskAdvisoryInput): RiskAdvisoryResult {
   const climate = REGION_CLIMATE[input.region] || REGION_CLIMATE["Punjab"];

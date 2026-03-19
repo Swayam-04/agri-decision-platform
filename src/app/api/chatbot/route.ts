@@ -13,9 +13,10 @@ export async function POST(req: NextRequest) {
     }
 
     await new Promise((r) => setTimeout(r, 300));
-    const result = simulateChatbot({ message, cropType, region, season, history , language });
+    const result = simulateChatbot({ message, cropType, region, season, history, language });
     return NextResponse.json(result);
-  } catch {
+  } catch (error) {
+    console.error("Chatbot API Error:", error);
     return NextResponse.json({ error: "Chatbot failed to respond" }, { status: 500 });
   }
 }

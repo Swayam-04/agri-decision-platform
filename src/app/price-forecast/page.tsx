@@ -150,18 +150,54 @@ export default function PriceForecastPage() {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={result.priceTimeline}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="day" tick={{ fontSize: 11 }} label={{ value: t("price.daysChart"), position: "insideBottom", offset: -5, fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} label={{ value: t("price.priceChart"), angle: -90, position: "insideLeft", fontSize: 11 }} />
-                      <Tooltip
-                        formatter={(value: number) => [`Rs ${value}`, t("price.priceChart")]}
-                        labelFormatter={(label) => `${t("price.daysChart")} ${label}`}
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} opacity={0.5} />
+                      <XAxis 
+                        dataKey="day" 
+                        tick={{ fontSize: 10, fill: "hsl(var(--foreground))" }} 
+                        axisLine={false}
+                        tickLine={false}
                       />
-                      <ReferenceLine y={result.currentPrice} stroke="#6b7280" strokeDasharray="5 5" label={{ value: t("price.current"), position: "right", fontSize: 10 }} />
+                      <YAxis 
+                        tick={{ fontSize: 10, fill: "hsl(var(--foreground))" }} 
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(val) => `₹${val}`}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xl backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                  {t("price.daysChart")} {label}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-purple-500" />
+                                  <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Rs {payload[0]?.value?.toLocaleString("en-IN")}
+                                  </p>
+                                </div>
+                                <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1">
+                                  {t("price.priceChart")}
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <ReferenceLine y={result.currentPrice} stroke="#6b7280" strokeDasharray="5 5" label={{ value: t("price.current"), position: "right", fontSize: 10, fill: "#6b7280" }} />
                       {result.decision === "Store" && (
-                        <ReferenceLine x={result.storeDays} stroke="#10b981" strokeDasharray="5 5" label={{ value: t("price.sellDay"), position: "top", fontSize: 10 }} />
+                        <ReferenceLine x={result.storeDays} stroke="#10b981" strokeDasharray="5 5" label={{ value: t("price.sellDay"), position: "top", fontSize: 10, fill: "#10b981" }} />
                       )}
-                      <Line type="monotone" dataKey="price" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                      <Line 
+                        type="monotone" 
+                        dataKey="price" 
+                        stroke="#8b5cf6" 
+                        strokeWidth={3} 
+                        dot={false}
+                        activeDot={{ r: 6, strokeWidth: 0, fill: "#8b5cf6" }}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>

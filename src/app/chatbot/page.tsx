@@ -49,10 +49,20 @@ export default function ChatbotPage() {
       const res = await fetch("/api/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-language": language },
-        body: JSON.stringify({ message, cropType, region, season, history: messages }),
+        body: JSON.stringify({ 
+          message, 
+          cropType, 
+          region, 
+          season, 
+          history: messages
+        }),
       });
       const data = await res.json();
-      const botMsg: ChatMessage = { role: "assistant", content: data.reply, timestamp: new Date().toISOString() };
+      const botMsg: ChatMessage = { 
+        role: "assistant", 
+        content: data.reply, 
+        timestamp: new Date().toISOString() 
+      };
       setMessages((prev) => [...prev, botMsg]);
       setSuggestions(data.suggestions || []);
     } catch {

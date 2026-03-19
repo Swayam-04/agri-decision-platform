@@ -2,20 +2,18 @@
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
 
-export type ThemeMode = "day" | "evening" | "night";
+export type ThemeMode = "day" | "night";
 
 const STORAGE_KEY = "cropintel-theme";
 
 function getTimeBasedTheme(): ThemeMode {
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Kolkata",
-    hour: "numeric",
-    hour12: false,
-  });
-  const hour = parseInt(formatter.format(new Date()));
+  // Simple IST check: 6 AM to 6 PM is Day, rest is Night
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(now.getTime() + istOffset);
+  const hour = istDate.getUTCHours();
   
   if (hour >= 6 && hour < 18) return "day";
-  if (hour >= 18 && hour < 20) return "evening";
   return "night";
 }
 

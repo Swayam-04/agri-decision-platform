@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     const language = req.headers.get("x-language") || "en";
     const body = await req.json();
     body.language = language;
-    const { region, season } = body;
+    const { region, season, soilType } = body;
 
     if (!region || !season) {
       return NextResponse.json({ error: "region and season are required" }, { status: 400 });
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     await new Promise((r) => setTimeout(r, 500));
 
-    const result = simulateRiskAdvisory({ region, season , language });
+    const result = simulateRiskAdvisory({ region, season, soilType, language });
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Failed to generate risk advisory" }, { status: 500 });
