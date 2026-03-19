@@ -381,6 +381,11 @@
   }
 }
 
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 .dashboard-root.day .sun-with-rays {
   opacity: 1;
   transform: translateY(0);

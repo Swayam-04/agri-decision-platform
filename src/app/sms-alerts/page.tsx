@@ -110,30 +110,39 @@ export default function SmsAlertsPage() {
   ];
 
   return (
-    <div className="p-space-y-6 p-4 md:p-8 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-[#3d1f0a] dark:text-[#f0fdf4] tracking-tight">{t("reports.title")}</h1>
-        <p className="text-[#6b4423]/70 dark:text-[#86efac]/70 mt-1 max-w-2xl">
+    <div className="space-y-8 p-4 md:p-10 max-w-7xl mx-auto min-h-screen">
+      <div className="mb-10 text-center md:text-left">
+        <h1 className="text-4xl md:text-5xl font-black text-[#3d1f0a] dark:text-[#f0fdf4] tracking-tight mb-2">
+          {t("reports.title")}
+        </h1>
+        <p className="text-lg text-[#6b4423]/60 dark:text-[#86efac]/60 max-w-2xl">
           {t("reports.subtitle")}
         </p>
       </div>
 
-      {/* Tab navigation */}
-      <div className="flex gap-1 bg-[#e8dcc8]/20 dark:bg-[#052e16]/20 p-1 rounded-xl w-fit mb-8">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 ${
-              activeTab === tab.id
-                ? "bg-white dark:bg-[#16a34a] text-[#16a34a] dark:text-white shadow-sm scale-[1.02]"
-                : "text-[#6b4423] dark:text-[#f0fdf4] hover:bg-white/50 dark:hover:bg-white/5 opacity-60 hover:opacity-100"
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+      {/* Premium Tabs */}
+      <div className="relative flex justify-center md:justify-start mb-12">
+        <div className="flex p-1.5 gap-1.5 bg-[#e8dcc8]/40 dark:bg-[#052e16]/40 backdrop-blur-md rounded-2xl border border-[#16a34a]/10 dark:border-[#16a34a]/20 shadow-inner">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`relative flex items-center gap-3 px-8 py-3.5 text-sm font-black rounded-xl transition-all duration-500 overflow-hidden ${
+                activeTab === tab.id
+                  ? "bg-white dark:bg-[#16a34a] text-[#16a34a] dark:text-white shadow-[0_10px_20px_rgba(22,163,74,0.2)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.3)] scale-[1.03] z-10"
+                  : "text-[#6b4423] dark:text-[#f0fdf4]/70 hover:bg-white/40 dark:hover:bg-white/5"
+              }`}
+            >
+              {activeTab === tab.id && (
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+              )}
+              <span className={`transition-transform duration-300 ${activeTab === tab.id ? "scale-110" : "scale-100"}`}>
+                {tab.icon}
+              </span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ─── TAB: Reports ─── */}
