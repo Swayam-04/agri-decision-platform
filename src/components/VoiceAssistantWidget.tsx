@@ -10,7 +10,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -111,14 +110,7 @@ export function VoiceAssistantWidget({ open, onOpenChange }: { open?: boolean; o
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>
-        <Button
-          size="icon"
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-[#16a34a] hover:bg-[#15803d] text-white z-50 animate-bounce-subtle"
-        >
-          <Mic className="h-6 w-6" />
-        </Button>
-      </SheetTrigger>
+
       <SheetContent className="w-full sm:max-w-md p-0 flex flex-col border-l-0 bg-[#fdf6e3]">
         <SheetHeader className="p-4 border-b bg-white/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center justify-between mt-2">

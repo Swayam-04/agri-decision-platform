@@ -21,7 +21,7 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR, StepLR
-from sklearn.metrics import precision_score, recall_score
+from sklearn.metrics import precision_score, recall_score, confusion_matrix
 from tqdm import tqdm
 import numpy as np
 
@@ -111,6 +111,21 @@ class Trainer:
 
         # ── Optimizer & Scheduler ──
         self._init_optimizer()
+
+        # ── Tracking ──
+        self.best_val_loss = float("inf")
+        self.patience_counter = 0
+        self.history = {
+            "train_loss": [],
+            "train_acc": [],
+            "train_precision": [],
+            "train_recall": [],
+            "val_loss": [],
+            "val_acc": [],
+            "val_precision": [],
+            "val_recall": [],
+            "lr": [],
+        }
 
     def _init_optimizer(self):
         """Initialize or reset optimizer/scheduler (useful for fine-tuning)."""
@@ -265,12 +280,14 @@ class Trainer:
         recall = 100.0 * recall_score(
             all_labels, all_preds, average="macro", zero_division=0
         )
+        cm = confusion_matrix(all_labels, all_preds)
 
         return {
             "loss": avg_loss,
             "accuracy": accuracy,
             "precision": precision,
             "recall": recall,
+            "confusion_matrix": cm.tolist(),
         }
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -338,6 +355,7 @@ class Trainer:
             self.history["val_precision"].append(val_metrics["precision"])
             self.history["val_recall"].append(val_metrics["recall"])
             self.history["lr"].append(current_lr)
+            self.last_cm = val_metrics["confusion_matrix"]
 
             # ── Console output ──
             print(
@@ -381,6 +399,11 @@ class Trainer:
         print(f"  Best val_accuracy:  {self.history['val_acc'][best_epoch_idx]:.2f}%")
         print(f"  Best val_precision: {self.history['val_precision'][best_epoch_idx]:.2f}%")
         print(f"  Best val_recall:    {self.history['val_recall'][best_epoch_idx]:.2f}%")
+        
+        if hasattr(self, 'last_cm'):
+            print(f"\n  ── Final Confusion Matrix ──")
+            print(np.array(self.last_cm))
+            
         print(f"{'='*60}\n")
 
         self.save_history()

@@ -40,6 +40,16 @@ from dataset.augmentation import get_farm_augmentation_transforms
 #  Preprocessing & Augmentation Transforms
 # ═════════════════════════════════════════════════════════════════════════════
 
+class AddGaussianNoise:
+    """Adds Gaussian noise to a tensor. picklable for DataLoader workers."""
+    def __init__(self, std=0.05):
+        self.std = std
+        
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+        if self.std > 0:
+            return tensor + torch.randn_like(tensor) * self.std
+        return tensor
+
 def get_transforms(mode: str = "train") -> transforms.Compose:
     """
     Build an image preprocessing and augmentation pipeline.
@@ -67,6 +77,8 @@ def get_transforms(mode: str = "train") -> transforms.Compose:
             farm_augments.transforms + [
                 # ── Preprocessing ──
                 transforms.ToTensor(),
+                # ── Noise Injection ──
+                AddGaussianNoise(config.AUGMENTATION.get("noise_std", 0.05)),
                 transforms.Normalize(mean=config.IMAGE_MEAN, std=config.IMAGE_STD),
             ]
         )
@@ -204,23 +216,18 @@ def _split_dataset(
 
 def get_class_weights(dataset: CropDiseaseDataset) -> torch.Tensor:
     """
-    Calculate inverse-frequency class weights for the loss function.
-    Useful for balancing training when "Healthy" or certain diseases
-    have significantly fewer (or more) samples.
+    Give higher importance to weak classes based on requirements:
+    Healthy: 1.5, Diseased: 1.0
     """
-    all_labels = dataset.get_labels()
-    counts = Counter(all_labels)
-    total_samples = len(all_labels)
     num_classes = len(dataset.classes)
-    
-    # Calculate weights: W = Total / (num_classes * class_count)
     weights = []
+    
     for i in range(num_classes):
-        cls_count = counts.get(i, 0)
-        if cls_count == 0:
-            weights.append(1.0) # Avoid division by zero
+        cls_name = dataset.classes[i]
+        if "healthy" in cls_name.lower():
+            weights.append(1.5)
         else:
-            weights.append(total_samples / (num_classes * cls_count))
+            weights.append(1.0)
             
     return torch.tensor(weights, dtype=torch.float32)
 

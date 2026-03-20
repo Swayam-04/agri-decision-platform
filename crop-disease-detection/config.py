@@ -29,9 +29,9 @@ LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 1e-4
 NUM_EPOCHS = 25
 EARLY_STOPPING_PATIENCE = 5
-TRAIN_SPLIT = 0.70                       # 70/15/15 train/val/test split
-VAL_SPLIT = 0.15
-TEST_SPLIT = 0.15
+TRAIN_SPLIT = 0.80                       # 80/20 train/val split
+VAL_SPLIT = 0.20
+TEST_SPLIT = 0.00
 
 # ─── Scheduler ────────────────────────────────────────────────────────────────
 SCHEDULER = "cosine"                     # Options: "cosine", "step"
@@ -61,6 +61,9 @@ AUGMENTATION = {
     # Slight blur — wind, camera shake, focus issues in the field
     "gaussian_blur_kernel": (3, 7),
     "gaussian_blur_prob": 0.3,
+
+    # Noise injection — simulates low quality camera sensors
+    "noise_std": 0.05,
 }
 
 # Mixup / CutMix (batch-level augmentation)

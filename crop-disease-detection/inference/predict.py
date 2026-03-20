@@ -221,7 +221,7 @@ class Predictor:
             top2_conf = top_predictions[1]["confidence"]
             if (top1_conf - top2_conf) < config.STABILITY_MARGIN:
                 return {
-                    "Disease": "Uncertain – Classes too similar",
+                    "Disease": "Uncertain – Retake Image",
                     "Confidence": f"{top1_conf*100:.1f}%",
                     "Severity": "N/A",
                     "Infection Area": "0%",
@@ -239,27 +239,30 @@ class Predictor:
         display_disease = predicted_disease
         final_verdict = "uncertain" # Default
 
-        # Path A: Strong Disease Priority (Task 3)
-        if "healthy" not in predicted_disease.lower() and confidence > config.DISEASE_PRIORITY_THRESHOLD:
-            final_verdict = "disease"
+        # Post-Processing: Extract disease vs healthy confidence (Requirement 9)
+        healthy_conf = 0.0
+        disease_conf = 0.0
         
-        # Path B: Strong Healthy Floor (Task 1 & 4)
+        for pred in top_predictions:
+            if "healthy" in pred["label"].lower():
+                healthy_conf = pred["probability_pct"]
+            else:
+                if disease_conf == 0.0:
+                    disease_conf = pred["probability_pct"]
+
+        # Requirement 9 post-processing check
+        if disease_conf < 80.0 and healthy_conf > 70.0:
+            final_verdict = "healthy"
+            display_disease = "Healthy"
+        elif "healthy" not in predicted_disease.lower() and confidence > config.DISEASE_PRIORITY_THRESHOLD:
+            final_verdict = "disease"
         elif "healthy" in predicted_disease.lower() and confidence > config.HEALTHY_PRIORITY_THRESHOLD:
-            # Task 6: Top-2 Decision Check (Healthy vs. Lesions)
-            # If model says Healthy but lesions exist and Top-2 is a disease
-            if has_visible_lesions and len(top_predictions) > 1:
-                runner_up = top_predictions[1]
-                if "healthy" not in runner_up["label"].lower():
-                    # Override to Disease due to physical evidence
-                    display_disease = runner_up["label"]
-                    confidence = runner_up["confidence"]
-                    final_verdict = "disease"
-                else:
-                    final_verdict = "healthy"
+            if has_visible_lesions and len(top_predictions) > 1 and "healthy" not in top_predictions[1]["label"].lower():
+                final_verdict = "disease"
+                display_disease = top_predictions[1]["label"]
+                confidence = top_predictions[1]["confidence"]
             else:
                 final_verdict = "healthy"
-        
-        # Path C: Conflict / Low Confidence -> Uncertain
         else:
             final_verdict = "uncertain"
 

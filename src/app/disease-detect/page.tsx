@@ -82,10 +82,64 @@ export default function DiseaseDetectPage() {
     }
   }, [t]);
 
+  async function checkIsPlantLeaf(base64: string): Promise<{ isLeaf: boolean, confidence: number }> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 100;
+        canvas.height = 100 * (img.height / img.width);
+        if (!ctx) return resolve({ isLeaf: true, confidence: 100 });
+        
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        
+        let greenPixels = 0;
+        const totalPixels = data.length / 4;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          if (g > r * 0.8 && g > b * 1.2 && g > 40) {
+            greenPixels++;
+          }
+        }
+        
+        const greenRatio = greenPixels / totalPixels;
+        const confidence = Math.min(99, Math.round(greenRatio * 1000) + 40);
+        
+        const isLeaf = greenRatio > 0.01;
+        resolve({ isLeaf, confidence });
+      };
+      img.onerror = () => resolve({ isLeaf: true, confidence: 100 });
+      img.src = base64;
+    });
+  }
+
   async function analyzeImage() {
     if (!imagePreview || result) return;
     setLoading(true);
     setError(null);
+
+    // 1️⃣ Add Image Classification Layer (Leaf Validation)
+    // 9️⃣ Prevent Backend Processing for invalid images
+    const { isLeaf, confidence } = await checkIsPlantLeaf(imagePreview);
+    
+    if (!isLeaf) {
+      setLoading(false);
+      setError(`${t("detect.invalidImageTitle")}\n${t("detect.invalidImageDesc")}`);
+      return;
+    }
+    
+    if (confidence < 70) {
+      setLoading(false);
+      setError(`${t("detect.invalidImageTitle")}\n${t("detect.invalidImageRetake") || "Invalid image – retake photo"}`);
+      return;
+    }
+
     try {
       const res = await fetch("/api/disease-detect", {
         method: "POST",
@@ -144,9 +198,9 @@ export default function DiseaseDetectPage() {
 
             {/* ERROR ALERT */}
             {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <p>{error}</p>
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2 text-sm text-red-600 dark:text-red-400 whitespace-pre-wrap">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <p className="font-medium leading-relaxed">{error}</p>
               </div>
             )}
 

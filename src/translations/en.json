@@ -22,6 +22,8 @@
   "advisory.whyToAvoid": "Why to avoid:",
   "card.aiAssistant.desc": "Chat with AI about your farm in simple language",
   "card.aiAssistant.title": "AI Assistant",
+  "card.voiceAssistant.title": "Voice Assistant",
+  "card.voiceAssistant.desc": "Speak in your local language to get AI farming advice",
   "card.cropAdvisory.desc": "Find out which crops to avoid this season",
   "card.cropAdvisory.title": "Crop Risk Advisory",
   "card.diseaseRisk.desc": "Predict disease probability for the next 7-10 days",
@@ -473,5 +475,8 @@
   "voice.thinking": "Thinking...",
   "voice.tip": "Tip: Check your GROQ_API_KEY and model settings, then restart the dev server.",
   "voice.title": "KisanBot Voice Assistant",
-  "voice.unsupported": "Voice features aren’t supported in this browser. Try Chrome/Edge on desktop or Android."
+  "voice.unsupported": "Voice features aren’t supported in this browser. Try Chrome/Edge on desktop or Android.",
+  "detect.invalidImageTitle": "❌ Invalid Image Detected",
+  "detect.invalidImageDesc": "Please upload a clear image of a plant leaf for disease analysis.",
+  "detect.invalidImageRetake": "Invalid image – retake photo"
 }

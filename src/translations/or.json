@@ -20,7 +20,7 @@
   "advisory.seasonSuffix": "ଋତୁ)",
   "advisory.seasonalInsight": "ଋତୁକାଳୀନ ଅନ୍ତର୍ଦୃଷ୍ଟି",
   "advisory.whyToAvoid": "କାହିଁକି ଦୂରେଇ ରହିବେ:",
-  "card.aiAssistant.desc": "ସରଳ ଭାଷାରେ ଆପଣଙ୍କ ଖାମାର ବିଷୟରେ ଏଆଇ ସହିତ ଚାଟ୍ କରନ୍ତୁ",
+  "card.aiAssistant.desc": "24/7 କୃଷି ବିଶେଷଜ୍ଞ ପରାମର୍ଶ",
   "card.aiAssistant.title": "ଏଆଇ ସହାୟକ",
   "card.cropAdvisory.desc": "ଏହି ଋତୁରେ କେଉଁ ଫସଲରୁ ଦୂରେଇ ରହିବେ ଜାଣନ୍ତୁ",
   "card.cropAdvisory.title": "ଫସଲ ବିପଦ ପରାମର୍ଶ",
@@ -473,8 +473,7 @@
   "voice.thinking": "ଭାବୁଛି...",
   "voice.tip": "ଟିପ୍: ଆପଣଙ୍କର GROQ_API_KEY ଏବଂ ମଡେଲ୍ ସେଟିଂସମୂହ ଯାଞ୍ଚ କରନ୍ତୁ, ତା’ପରେ ଦେଭ୍ ସର୍ଭରକୁ ପୁନର୍ବାର ଆରମ୍ଭ କରନ୍ତୁ |",
   "voice.title": "କିସାନ୍ ବୋଟ୍ ଭଏସ୍ ଆସିଷ୍ଟାଣ୍ଟ୍",
-  "voice.unsupported": "ଏହି ବ୍ରାଉଜର୍ ରେ ସମର୍ଥିତ ନୁହେଁ।"
-,
+  "voice.unsupported": "ଏହି ବ୍ରାଉଜର୍ ରେ ସମର୍ଥିତ ନୁହେଁ।",
   "reports.title": "ରିପୋର୍ଟ ଏବଂ ଆଲର୍ଟ",
   "reports.subtitle": "ବିଶ୍ଳେଷଣାତ୍ମକ PDF ରିପୋର୍ଟ ଡାଉନଲୋଡ୍ କରନ୍ତୁ ଏବଂ ମାନୁଆଲ୍ SMS ପରିଚାଳନା କରନ୍ତୁ |",
   "reports.tabReports": "ରିପୋର୍ଟ",
@@ -489,5 +488,8 @@
   "reports.last30Days": "ଶେଷ ୩୦ ଦିନ",
   "reports.fullSeason": "ଚଳିତ ସିଜନ୍",
   "reports.downloading": "ପ୍ରସ୍ତୁତ ହେଉଛି...",
-  "reports.generateBtn": "PDF ରିପୋର୍ଟ ଡାଉନଲୋଡ୍ କରନ୍ତୁ"
+  "reports.generateBtn": "PDF ରିପୋର୍ଟ ଡାଉନଲୋଡ୍ କରନ୍ତୁ",
+  "detect.invalidImageTitle": "❌ ଅବୈଧ ଚିତ୍ର ଚିହ୍ନଟ ହୋଇଛି",
+  "detect.invalidImageDesc": "ଦୟାକରି ରୋଗ ବିଶ୍ଳେଷଣ ପାଇଁ ଉଦ୍ଭିଦ ପତ୍ରର ଏକ ସ୍ପଷ୍ଟ ଚିତ୍ର ଅପଲୋଡ୍ କରନ୍ତୁ |",
+  "detect.invalidImageRetake": "ଅବୈଧ ଚିତ୍ର – ପୁଣି ଫଟୋ ନିଅନ୍ତୁ"
 }
