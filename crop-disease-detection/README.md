@@ -134,7 +134,21 @@ Edit `config.py` to change:
 | `LEARNING_RATE`   | `1e-3`             | Initial learning rate          |
 | `NUM_EPOCHS`      | `25`               | Max training epochs            |
 
-## Supported Diseases
+## 🚀 Advanced Features
 
-38 classes from the PlantVillage dataset covering:
-Apple, Blueberry, Cherry, Corn, Grape, Orange, Peach, Pepper, Potato, Raspberry, Soybean, Squash, Strawberry, and Tomato — with healthy and diseased variants.
+### 🛡️ Leaf Validation Layer
+Before any heavy inference, images are processed by a **fast client-side rule-base** that inspects RGB/HSV pixel distributions. 
+- Prevents processing of humans, objects, or non-plant imagery.
+- Retake requests triggered for confidence < 70%.
+
+### 🏋️ Balanced Training Strategy
+- **Class Weighting**: Explicitly weighted **Healthy (1.5)** vs **Diseased (1.0)** to reduce false alarms.
+- **80/20 Splitting**: Optimized for maximum exposure to real-field images.
+- **Farm-Condition Augmentation**: Dynamic Gaussian Noise, Blur, and Zoom to simulate real-world mobile photography.
+
+### 🧠 Post-Processing Guardrails
+- **Top-2 Prediction Check**: If results are ambiguous (Top-1 vs Top-2 margin < 10%), returns **"Uncertain – Retake Image"**.
+- **Healthy Floor**: If `disease_confidence` < 80 and `healthy_confidence` > 70, the system prioritises a "Healthy" verdict for safety.
+
+## Supported Diseases
+38 classes from the PlantVillage dataset covering: Apple, Potato, Tomato, Pepper, etc., with specific localized logic for regional Indian crops.
