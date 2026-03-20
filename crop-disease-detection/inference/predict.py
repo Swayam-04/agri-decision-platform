@@ -179,6 +179,13 @@ class Predictor:
                 f"Expected file path or PIL Image, got {type(image_input)}"
             )
 
+        # ── 0. Preprocessing: Enhance Image (Requirement Task 7) ──
+        from PIL import ImageEnhance, ImageFilter
+        # Sharpening and Contrast to highlight small lesions like bacterial spots
+        pil_image = pil_image.filter(ImageFilter.SHARPEN)
+        enhancer = ImageEnhance.Contrast(pil_image)
+        pil_image = enhancer.enhance(1.2) # 20% contrast boost
+
         # ── 1. Stability Check: Cache (Requirement 1) ──
         image_hash = self._get_image_hash(pil_image)
         if image_hash in self.prediction_cache:
@@ -209,11 +216,10 @@ class Predictor:
         confidence = top_predictions[0]["confidence"]
         
         # ── 3. Confidence Stabilization: Margin Logic ──
-        # Prevent flipping between classes if they are too close
         if len(top_predictions) >= 2:
             top1_conf = top_predictions[0]["confidence"]
             top2_conf = top_predictions[1]["confidence"]
-            if (top1_conf - top2_conf) < 0.10: # 10% Margin for general stability
+            if (top1_conf - top2_conf) < config.STABILITY_MARGIN:
                 return {
                     "Disease": "Uncertain – Classes too similar",
                     "Confidence": f"{top1_conf*100:.1f}%",
@@ -223,58 +229,65 @@ class Predictor:
                     "isStable": False
                 }
 
-        # ── 4. Healthy Detection Layer (Requirement 1) ──
-        healthy_idx = -1
-        for i, pred in enumerate(top_predictions):
-            if "healthy" in pred["label"].lower():
-                healthy_idx = i
-                break
-        
-        # Rule: If disease confidence < 90% AND healthy exists, check 25% margin
-        is_likely_healthy = False
-        if "healthy" not in predicted_disease.lower() and healthy_idx != -1:
-            healthy_conf = top_predictions[healthy_idx]["confidence"]
-            if confidence < 0.90 and (confidence - healthy_conf) < config.HEALTHY_MARGIN_THRESHOLD:
-                is_likely_healthy = True
-                display_disease = "Likely Healthy"
-
-        # ── 5. Confidence Threshold (Requirement 2) ──
-        if confidence < config.CONFIDENCE_THRESHOLD:
-            return {
-                "Disease": "Uncertain – Please retake image",
-                "Confidence": f"{confidence*100:.1f}%",
-                "Severity": "N/A",
-                "Infection Area": "0%",
-                "Recommendation": "Confidence too low for reliable diagnosis. Ensure good lighting.",
-                "isStable": False
-            }
-
-        # Step 5: Infection Area Detection
+        # ── 4. Image Feature Detection (Requirement Task 2) ──
         cv2_img = self.severity_estimator.pil_to_cv2(pil_image)
         severity_metrics = self.severity_estimator.estimate(cv2_img)
         infection_pct = severity_metrics["infected_area_pct"]
+        has_visible_lesions = infection_pct > 1.0 # 1% threshold for "visible"
 
-        # ── 6. Healthy Override Rule (Requirement 3) ──
-        # If infection < 10% AND disease confidence < 85% -> Healthy
-        if "healthy" not in predicted_disease.lower() and not is_likely_healthy:
-            if infection_pct < config.INFECTION_HEALTHY_OVERRIDE and confidence < config.HEALTHY_OVERRIDE_CONFIDENCE:
-                is_likely_healthy = True
-                display_disease = "Healthy (Override)"
+        # ── 5. Decision Flow (Requirement Tasks 1, 3, 4, 9) ──
+        display_disease = predicted_disease
+        final_verdict = "uncertain" # Default
 
-        # Override severity and naming for healthy cases
-        if "healthy" in predicted_disease.lower() or is_likely_healthy:
+        # Path A: Strong Disease Priority (Task 3)
+        if "healthy" not in predicted_disease.lower() and confidence > config.DISEASE_PRIORITY_THRESHOLD:
+            final_verdict = "disease"
+        
+        # Path B: Strong Healthy Floor (Task 1 & 4)
+        elif "healthy" in predicted_disease.lower() and confidence > config.HEALTHY_PRIORITY_THRESHOLD:
+            # Task 6: Top-2 Decision Check (Healthy vs. Lesions)
+            # If model says Healthy but lesions exist and Top-2 is a disease
+            if has_visible_lesions and len(top_predictions) > 1:
+                runner_up = top_predictions[1]
+                if "healthy" not in runner_up["label"].lower():
+                    # Override to Disease due to physical evidence
+                    display_disease = runner_up["label"]
+                    confidence = runner_up["confidence"]
+                    final_verdict = "disease"
+                else:
+                    final_verdict = "healthy"
+            else:
+                final_verdict = "healthy"
+        
+        # Path C: Conflict / Low Confidence -> Uncertain
+        else:
+            final_verdict = "uncertain"
+
+        # ── 6. Final Formatting ──
+        if final_verdict == "uncertain":
+             return {
+                "Disease": "Uncertain – Please retake image",
+                "Confidence": f"{confidence*100:.1f}%",
+                "Severity": "N/A",
+                "Infection Area": f"{infection_pct}%",
+                "Recommendation": "Confidence too low or conflicting features. Ensure leaf is centered and well-lit.",
+                "isStable": False
+            }
+
+        # Handle Healthy Output
+        if final_verdict == "healthy":
             severity = "Low"
-            display_disease = "Healthy" if "healthy" in predicted_disease.lower() else display_disease
-            infection_pct = infection_pct if not "healthy" in predicted_disease.lower() else 0.0
+            display_name = "Healthy"
+            infection_pct = 0.0 # Force 0 for confirmed healthy
             recommended_action = "No action needed. Periodic monitoring recommended."
         else:
+            # Handle Disease Output
             severity = severity_metrics["severity"]
-            display_disease = predicted_disease
-            recommended_action = self._get_recommendation(predicted_disease, severity)
+            display_name = display_disease
+            recommended_action = self._get_recommendation(display_disease, severity)
 
-        # Final Result
         result = {
-            "Disease": display_disease.replace("___", " → ").replace("_", " "),
+            "Disease": display_name.replace("___", " → ").replace("_", " "),
             "Confidence": f"{confidence * 100:.1f}%",
             "Severity": severity,
             "Infection Area": f"{infection_pct}%",

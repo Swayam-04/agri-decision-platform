@@ -158,13 +158,15 @@ DEFAULT_ACTION = "Consult an agronomist for a detailed diagnosis and treatment p
 # Minimum confidence required to return a specific disease (else returns 'Uncertain')
 CONFIDENCE_THRESHOLD = 0.75  
 
-# ─── Healthy Detection Refinement (Smarter Logic) ──────────────────────────────
-# If top prediction is disease but "Healthy" exists, check this margin
-HEALTHY_MARGIN_THRESHOLD = 0.25
+# ─── Disease Detection Refinement (Balanced Logic) ─────────────────────────────
+# If a disease is predicted with this confidence, we skip healthy overrides
+DISEASE_PRIORITY_THRESHOLD = 0.80
 
-# If infection area is below this % and disease confidence is below 85%, force Healthy
-INFECTION_HEALTHY_OVERRIDE = 10.0
-HEALTHY_OVERRIDE_CONFIDENCE = 0.85
+# If "Healthy" is predicted, it MUST be above this confidence to be returned
+HEALTHY_PRIORITY_THRESHOLD = 0.85
+
+# Margin for general class stability (Top-1 vs Top-2)
+STABILITY_MARGIN = 0.10
 
 # Performance targets (latency logging)
 MAX_RESPONSE_TIME_MS = 2000

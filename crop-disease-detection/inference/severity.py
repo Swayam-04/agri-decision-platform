@@ -55,16 +55,24 @@ class SeverityEstimator:
                 "status": "No leaf detected"
             }
 
-        # 3. Segment Symptoms (Lesions)
-        # Symptoms are typically brown, black, or yellowish-brown spots
-        # Brownish spots often have low saturation and specific hue shifts
-        # Hue: 10-30 (Orange/Brown), 
-        # Or low saturation (greyish necrotic areas)
-        symptom_mask1 = cv2.inRange(hsv, np.array([10, 50, 20]), np.array([25, 255, 200])) # Brown
-        symptom_mask2 = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 60]))    # Near Black
+        # 3. Segment Symptoms (Lesions) (Requirement Task 2)
+        # We use multiple masks to detect different types of symptoms
         
-        symptom_mask = cv2.bitwise_or(symptom_mask1, symptom_mask2)
-        symptom_mask = cv2.bitwise_and(symptom_mask, leaf_mask) # Only inside leaf
+        # Mask 1: Brown/Necrotic spots (Darker brown to lighter tan)
+        mask_brown = cv2.inRange(hsv, np.array([5, 40, 20]), np.array([25, 255, 180]))
+        
+        # Mask 2: Black patches/fungal growth (Very low value)
+        mask_black = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 60]))
+        
+        # Mask 3: Yellow halos / early chlorosis (Bright yellow/green-yellow)
+        mask_yellow = cv2.inRange(hsv, np.array([18, 100, 100]), np.array([35, 255, 255]))
+        
+        # Combine masks (OR operation)
+        symptom_mask = cv2.bitwise_or(mask_brown, mask_black)
+        symptom_mask = cv2.bitwise_or(symptom_mask, mask_yellow)
+        
+        # Ensure lesions are only detected within the leaf boundary
+        symptom_mask = cv2.bitwise_and(symptom_mask, leaf_mask)
 
         symptom_area = cv2.countNonZero(symptom_mask)
 
