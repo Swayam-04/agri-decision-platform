@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { REGION_LIST, SEASON_LIST, SOIL_LIST } from "@/lib/types";
 import type { RiskAdvisoryResult } from "@/lib/types";
-import { AlertTriangle, Loader2, XCircle, CheckCircle2, Info, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Loader2, XCircle, CheckCircle2, Info, ShieldAlert, TrendingUp } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function RiskAdvisoryPage() {
@@ -152,6 +152,40 @@ export default function RiskAdvisoryPage() {
               ))}
             </div>
           </div>
+
+          {/* Recommended Combinations */}
+          {result.recommendedCombinations && result.recommendedCombinations.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
+                <TrendingUp className="h-5 w-5 text-blue-500" />
+                {t("advisory.intercroppingRec") || "Recommended Intercropping"}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {result.recommendedCombinations.map((combo, idx) => (
+                  <Card key={idx} className="border-l-4 border-l-blue-400 bg-blue-50/30">
+                    <CardContent className="pt-4 pb-4">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-100 p-2 rounded-full shrink-0">
+                          <TrendingUp className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap gap-1 mb-1">
+                            {combo.crops.map(c => (
+                              <Badge key={c} variant="secondary" className="text-[10px] bg-blue-100/50 text-blue-700 border-blue-200">
+                                {t(`crops.${c}`)}
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="text-xs font-medium text-blue-800 mb-1">+{combo.profitBoost}% {t("advisory.profitBoost") || "Expected Profit Boost"}</p>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">{combo.reason}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Safe Crops */}
           <div>

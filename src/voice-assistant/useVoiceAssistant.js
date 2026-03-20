@@ -37,16 +37,31 @@ export function useVoiceAssistant({ lang, onFinalTranscript, autoSpeak }) {
       const utter = new SpeechSynthesisUtterance(cleaned);
       try {
         const voices = window.speechSynthesis.getVoices?.() || [];
-        const langCode = lang || "";
+        // Map common codes to full BCP-47
+        const langMap = {
+          en: "en-IN",
+          hi: "hi-IN",
+          bn: "bn-IN",
+          te: "te-IN",
+          ta: "ta-IN",
+          mr: "mr-IN",
+          pa: "pa-IN",
+          or: "or-IN",
+          kn: "kn-IN",
+        };
+        const langCode = langMap[lang] || lang || "en-IN";
         const langPrefix = langCode.split("-")[0]?.toLowerCase?.() || "";
-        const hasMatchingVoice =
-          !!langCode &&
-          voices.some(
-            (v) =>
-              v?.lang?.toLowerCase() === langCode.toLowerCase() ||
-              (!!langPrefix && v?.lang?.toLowerCase().startsWith(langPrefix)),
-          );
-        if (hasMatchingVoice && langCode) {
+        
+        // Find best matching voice
+        let voice = voices.find(v => v.lang === langCode);
+        if (!voice) {
+          voice = voices.find(v => v.lang.startsWith(langPrefix));
+        }
+        
+        if (voice) {
+          utter.voice = voice;
+          utter.lang = voice.lang;
+        } else {
           utter.lang = langCode;
         }
       } catch {
@@ -76,9 +91,21 @@ export function useVoiceAssistant({ lang, onFinalTranscript, autoSpeak }) {
 
     cancelSpeak();
 
+    const langMap = {
+      en: "en-IN",
+      hi: "hi-IN",
+      bn: "bn-IN",
+      te: "te-IN",
+      ta: "ta-IN",
+      mr: "mr-IN",
+      pa: "pa-IN",
+      or: "or-IN",
+      kn: "kn-IN",
+    };
+
     const recognition = new SR();
     recognitionRef.current = recognition;
-    recognition.lang = lang || "en-IN";
+    recognition.lang = langMap[lang] || lang || "en-IN";
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;

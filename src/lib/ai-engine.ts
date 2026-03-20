@@ -765,16 +765,98 @@ export function simulateDiseaseDetection(cropType: string, language?: string): D
       description: tLocale(language, "Healthy_desc", { crop: tLocale(language, cropType, {}) }),
       remedies: [],
       preventiveMeasures: [
-        tLocale(language, "Healthy_prev1", {}),
-        tLocale(language, "Healthy_prev2", {}),
+        tLocale(language, "preventive.healthy.1", {}),
+        tLocale(language, "preventive.healthy.2", {}),
+        tLocale(language, "preventive.healthy.3", {}),
+        tLocale(language, "preventive.healthy.4", {}),
+        tLocale(language, "preventive.healthy.5", {}),
       ],
+      infectionArea: "0%",
+      topPredictions: [
+        { label: tLocale(language, "Healthy", {}), confidence: 0.92 + seededRandom(seed, 501) * 0.06 },
+        { label: tLocale(language, "Minor Heat Stress", {}), confidence: 0.03 + seededRandom(seed, 502) * 0.02 }
+      ],
+      isStable: true
     };
   }
 
   const db = DISEASE_DB[cropType] || DISEASE_DB["Rice"];
   const idx = hash(seed) % db.diseases.length;
   const disease = db.diseases[idx];
-  const confidence = 0.72 + seededRandom(seed, 1) * 0.23; // 72-95%
+  const confidence = 0.65 + seededRandom(seed, 1) * 0.3; // 65-95% (Lowered to test Uncertainty)
+
+  // Top-2 logic: Pick another disease or healthy as runner up
+  const rIdx = (idx + 1) % db.diseases.length;
+  const runnerUp = db.diseases[rIdx];
+  const isRunnerUpHealthy = seededRandom(seed, 2) < 0.4;
+  const runnerUpName = isRunnerUpHealthy ? "Healthy" : runnerUp.name;
+  
+  const rConf = (1 - confidence) * (0.6 + seededRandom(seed, 3) * 0.3);
+
+  // Requirement: 75% Confidence Threshold (Task 2)
+  if (confidence < 0.75) {
+    return {
+      diseaseName: tLocale(language, "Uncertain – Please retake image", {}),
+      severity: "Healthy",
+      confidence: Math.round(confidence * 100) / 100,
+      description: tLocale(language, "Confidence too low for reliable diagnosis. Ensure good lighting.", {}),
+      remedies: [],
+      preventiveMeasures: [],
+      infectionArea: "0%",
+      isStable: false,
+      topPredictions: [
+        { label: tLocale(language, disease.name, {}), confidence: Math.round(confidence * 100) / 100 },
+        { label: tLocale(language, runnerUpName, {}), confidence: Math.round(rConf * 100) / 100 }
+      ]
+    };
+  }
+
+  // Requirement: Healthy Detection Layer (25% margin logic) (Task 1)
+  if (isRunnerUpHealthy && (confidence - rConf) < 0.25) {
+    return {
+      diseaseName: tLocale(language, "Likely Healthy", {}),
+      severity: "Healthy",
+      confidence: Math.round(confidence * 100) / 100,
+      description: tLocale(language, "The AI detected some anomalies but they are within healthy margins.", {}),
+      remedies: [],
+      preventiveMeasures: [
+        tLocale(language, "preventive.healthy.1", {}),
+        tLocale(language, "preventive.healthy.2", {}),
+        tLocale(language, "preventive.healthy.3", {}),
+      ],
+      infectionArea: "5%",
+      isStable: true,
+      topPredictions: [
+        { label: tLocale(language, disease.name, {}), confidence: Math.round(confidence * 100) / 100 },
+        { label: tLocale(language, "Healthy", {}), confidence: Math.round(rConf * 100) / 100 }
+      ]
+    };
+  }
+
+  const infectionAreaVal = Math.round(seededRandom(seed, 9) * 45 + 5);
+  const infectionArea = infectionAreaVal.toString() + "%";
+
+  // Requirement: Healthy Override Rule (Infection < 10% and Conf < 85%) (Task 3)
+  if (infectionAreaVal < 10 && confidence < 0.85) {
+     return {
+      diseaseName: tLocale(language, "Healthy (Override)", {}),
+      severity: "Healthy",
+      confidence: Math.round(confidence * 100) / 100,
+      description: tLocale(language, "No significant disease symptoms detected. Minor spots are normal.", {}),
+      remedies: [],
+      preventiveMeasures: [
+        tLocale(language, "preventive.healthy.1", {}),
+        tLocale(language, "preventive.healthy.2", {}),
+        tLocale(language, "preventive.healthy.3", {}),
+      ],
+      infectionArea: infectionArea,
+      isStable: true,
+      topPredictions: [
+        { label: tLocale(language, "Healthy", {}), confidence: 0.85 },
+        { label: tLocale(language, disease.name, {}), confidence: Math.round(confidence * 100) / 100 }
+      ]
+    };
+  }
 
   return {
     diseaseName: tLocale(language, disease.name, {}),
@@ -783,6 +865,12 @@ export function simulateDiseaseDetection(cropType: string, language?: string): D
     description: tLocale(language, disease.name + "_desc", {}) !== disease.name + "_desc" ? tLocale(language, disease.name + "_desc", {}) : disease.description,
     remedies: disease.remedies.map(r => tLocale(language, r, {}) !== r ? tLocale(language, r, {}) : r),
     preventiveMeasures: disease.preventive.map(p => tLocale(language, p, {}) !== p ? tLocale(language, p, {}) : p),
+    infectionArea: Math.round(seededRandom(seed, 9) * 45 + 5).toString() + "%",
+    topPredictions: [
+      { label: tLocale(language, disease.name, {}), confidence: Math.round(confidence * 100) / 100 },
+      { label: tLocale(language, runnerUp.name, {}), confidence: Math.round(rConf * 100) / 100 }
+    ],
+    isStable: confidence > 0.8
   };
 }
 
@@ -878,11 +966,82 @@ const CROP_ECONOMICS: Record<string, { yieldRange: [number, number]; unit: strin
   Maize: { yieldRange: [20, 35], unit: "quintals", priceRange: [1900, 2400], baseCost: 16000 },
   Soybean: { yieldRange: [8, 14], unit: "quintals", priceRange: [4200, 5500], baseCost: 20000 },
   Groundnut: { yieldRange: [10, 18], unit: "quintals", priceRange: [5200, 6500], baseCost: 25000 },
+  Beans: { yieldRange: [15, 25], unit: "quintals", priceRange: [4000, 5500], baseCost: 15000 },
 };
 
 export function simulateProfitPrediction(input: ProfitPredictionInput): ProfitPredictionResult {
-  const econ = CROP_ECONOMICS[input.cropType] || CROP_ECONOMICS["Rice"];
-  const seed = `${input.cropType}-${input.region}-${input.season}-${input.soilType}`;
+  // Handle Multi-Crop logic
+  if (input.cropTypes && input.cropTypes.length > 1) {
+    const individualProfits: Record<string, ProfitPredictionResult> = {};
+    let totalGrossRevenue = 0;
+    let totalInputCost = 0;
+    const allRiskFactors: string[] = [];
+
+    input.cropTypes.forEach((crop) => {
+      const res = simulateProfitPrediction({ ...input, cropType: crop, cropTypes: undefined });
+      individualProfits[crop] = res;
+      totalGrossRevenue += res.grossRevenuePerAcre;
+      totalInputCost += res.inputCostPerAcre;
+      res.riskFactors.forEach((rf) => {
+        if (!allRiskFactors.includes(rf)) allRiskFactors.push(rf);
+      });
+    });
+
+    // Intercropping synergy: 15% revenue boost due to better land utilization/pest control
+    // 10% cost reduction due to shared labor/irrigation/land preparation
+    // synergyMultiplier: 1.15 (15% yield boost from intercropping interaction)
+    // costSavingMultiplier: 0.90 (10% saving on shared inputs)
+    const synergyMultiplier = 1.15;
+    const costSavingMultiplier = 0.9;
+
+    const adjustedGrossRevenue = Math.round(totalGrossRevenue * synergyMultiplier);
+    const adjustedInputCost = Math.round(totalInputCost * costSavingMultiplier);
+    const combinedProfit = adjustedGrossRevenue - adjustedInputCost;
+    
+    const baselineProfit = totalGrossRevenue - totalInputCost;
+    const netGainPercent = baselineProfit !== 0 
+      ? Math.round(((combinedProfit - baselineProfit) / Math.abs(baselineProfit)) * 100)
+      : 15;
+
+    const recommendation = netGainPercent > 0 
+      ? "Intercropping is profitable. Multi-cropping reduces resource overlap and improves soil nutrient utilization."
+      : "Single-crop farming may be more stable for this combination. Intercropping yields are currently similar to baseline.";
+
+    // Merge cost breakdowns for broad categories
+    const mergedCostBreakdown: { item: string; cost: number }[] = [];
+    const items = ["Seeds & Seedlings", "Fertilizers", "Pesticides & Fungicides", "Labour", "Irrigation", "Machinery & Equipment", "Transport & Misc"];
+    items.forEach(item => {
+      let cost = 0;
+      input.cropTypes?.forEach(c => {
+        const cCost = individualProfits[c].costBreakdown.find(cb => cb.item.includes(item))?.cost || 0;
+        cost += cCost;
+      });
+      mergedCostBreakdown.push({ item: tLocale(input.language, item, {}), cost: Math.round(cost * costSavingMultiplier) });
+    });
+
+    return {
+      expectedYieldPerAcre: 0,
+      yieldUnit: "mixed",
+      expectedMarketPrice: 0,
+      marketPriceRange: { low: 0, high: 0 },
+      inputCostPerAcre: adjustedInputCost,
+      costBreakdown: mergedCostBreakdown,
+      grossRevenuePerAcre: adjustedGrossRevenue,
+      profitPerAcre: combinedProfit,
+      profitRange: { low: combinedProfit * 0.85, high: combinedProfit * 1.15 },
+      confidenceScore: 0.82,
+      riskFactors: [...allRiskFactors, "Complexity of managing multiple harvest cycles"],
+      individualProfits,
+      combinedProfit,
+      netGainPercent,
+      recommendation,
+    };
+  }
+
+  // Single crop logic (unchanged but cleaned up)
+  const crop = input.cropType || "Rice";
+  const econ = CROP_ECONOMICS[crop] || CROP_ECONOMICS["Rice"];
+  const seed = `${crop}-${input.region}-${input.season}-${input.soilType}`;
 
   // Yield calculation
   const yieldFactor = seededRandom(seed, 1);
@@ -916,13 +1075,13 @@ export function simulateProfitPrediction(input: ProfitPredictionInput): ProfitPr
   const profitVariation = Math.round(Math.abs(profit) * 0.25);
 
   const riskFactors: string[] = [];
-  if (input.season === "Kharif" && ["Tomato", "Potato"].includes(input.cropType)) {
+  if (input.season === "Kharif" && ["Tomato", "Potato"].includes(crop)) {
     riskFactors.push("High rainfall during Kharif may cause waterlogging");
   }
   if (input.irrigationType === "Rain-fed") {
     riskFactors.push("Rain-fed cultivation adds weather dependency risk");
   }
-  if (["Tomato", "Onion"].includes(input.cropType)) {
+  if (["Tomato", "Onion"].includes(crop)) {
     riskFactors.push("High price volatility - market timing is critical");
   }
 
@@ -952,23 +1111,84 @@ const CROP_TREND_BIAS: Record<string, number> = {
 };
 
 export function simulatePriceForecast(input: PriceForecastInput): PriceForecastResult {
+  // Handle Multi-Crop logic
+  if (input.cropTypes && input.cropTypes.length > 1) {
+    const individualDecisions: Record<string, PriceForecastResult> = {};
+    const sellNow: string[] = [];
+    const store: string[] = [];
+    let totalGain = 0;
+
+    input.cropTypes.forEach((crop) => {
+      const currentPrice = input.currentPrices?.[crop] || 2000;
+      const res = simulatePriceForecast({ ...input, cropType: crop, cropTypes: undefined, currentPrice });
+      individualDecisions[crop] = res;
+      if (res.decision === "Sell Now") sellNow.push(crop);
+      else store.push(crop);
+      totalGain += res.expectedGainLoss;
+    });
+
+    let combinedStrategy = "";
+    if (sellNow.length > 0 && store.length > 0) {
+      combinedStrategy = `Partial selling recommended. Sell ${sellNow.join(", ")} immediately. Store ${store.join(", ")} for better prices. Total potential gain: Rs ${totalGain.toLocaleString("en-IN")}.`;
+    } else if (store.length > 0) {
+      combinedStrategy = `Storage strategy recommended for all crops (${store.join(", ")}). Projected trend is rising. Total potential gain: Rs ${totalGain.toLocaleString("en-IN")}.`;
+    } else {
+      combinedStrategy = `Immediate sale recommended for all crops (${sellNow.join(", ")}) to maximize liquidity and avoid price drops.`;
+    }
+
+    // Generate a combined price timeline
+    const combinedTimeline: any[] = [];
+    for (let d = 0; d <= 30; d++) {
+      const entry: any = { day: d };
+      input.cropTypes.forEach((crop) => {
+        entry[crop] = individualDecisions[crop].priceTimeline[d]?.price || 0;
+      });
+      combinedTimeline.push(entry);
+    }
+
+    // Return a dummy main result with combined data
+    return {
+      decision: store.length > 0 ? "Store" : "Sell Now",
+      storeDays: store.length > 0 ? Math.max(...store.map(c => individualDecisions[c].storeDays)) : 0,
+      currentPrice: 0,
+      forecastedPrice: 0,
+      priceChange: 0,
+      expectedGainLoss: totalGain,
+      storageCost: Object.values(individualDecisions).reduce((acc, curr) => acc + curr.storageCost, 0),
+      spoilageRisk: store.some(c => individualDecisions[c].spoilageRisk === "High") ? "High" : "Low",
+      priceTrend: store.length > 0 ? "Rising" : "Falling",
+      priceTimeline: combinedTimeline,
+      reasoning: combinedStrategy,
+      individualDecisions,
+      combinedStrategy,
+    };
+  }
+
+  // Single crop logic (unchanged but cleaned up)
+  const crop = input.cropType || "Rice";
+  const currentPrice = input.currentPrice || 2000;
   // Seed includes all user inputs + today's date so:
   // - different inputs → different decision
   // - same inputs on a different day → refreshed decision (feels live)
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const seed = `${input.cropType}-${input.region}-${Math.round(input.currentPrice)}-${Math.round(input.quantityQuintals)}-${Math.round(input.storageCostPerDay)}-${today}`;
+  const seed = `${crop}-${input.region}-${Math.round(currentPrice)}-${Math.round(input.quantityQuintals)}-${Math.round(input.storageCostPerDay)}-${today}`;
 
   // Generate price timeline (30 days)
   // Use crop-specific bias so durable crops often trend up, perishables often trend down
-  const trendBias = CROP_TREND_BIAS[input.cropType] ?? 0.5;
-  const trendSeed = seededRandom(`${input.cropType}-${input.region}-${today}`, 7);
+  const trendBias = CROP_TREND_BIAS[crop] ?? 0.5;
+  const trendSeed = seededRandom(`${crop}-${input.region}-${today}`, 7);
   const trend = trendSeed > (1 - trendBias) ? 1 : -1;
-  const volatility = ["Tomato", "Onion", "Potato"].includes(input.cropType) ? 0.04 : 0.015;
+  const volatility = ["Tomato", "Onion", "Potato"].includes(crop) ? 0.04 : 0.015;
 
-  const timeline: { day: number; price: number }[] = [];
-  let price = input.currentPrice;
+  const timeline: any[] = [];
+  let price = currentPrice;
   for (let d = 0; d <= 30; d++) {
-    timeline.push({ day: d, price: Math.round(price) });
+    const entry: any = { day: d };
+    entry[crop] = Math.round(price);
+    // Also include 'price' key for backward compatibility if needed, 
+    // but the instruction says to normalize to crop name.
+    entry.price = Math.round(price); 
+    timeline.push(entry);
     const change = (trend * 0.005 + (seededRandom(seed, d + 100) - 0.45) * volatility) * price;
     price += change;
   }
@@ -985,21 +1205,21 @@ export function simulatePriceForecast(input: PriceForecastInput): PriceForecastR
 
   const forecastedPrice = bestPrice;
   const totalStorageCost = bestDay * input.storageCostPerDay * input.quantityQuintals;
-  const priceGain = (forecastedPrice - input.currentPrice) * input.quantityQuintals;
+  const priceGain = (forecastedPrice - currentPrice) * input.quantityQuintals;
   const netGainLoss = priceGain - totalStorageCost;
 
   // Spoilage risk
-  const perishable = ["Tomato", "Potato", "Onion"].includes(input.cropType);
+  const perishable = ["Tomato", "Potato", "Onion"].includes(crop);
   const spoilageRisk: "Low" | "Medium" | "High" = bestDay > 20 && perishable ? "High" : bestDay > 10 && perishable ? "Medium" : "Low";
 
   const priceTrend: "Rising" | "Stable" | "Falling" =
-    timeline[30].price > input.currentPrice * 1.05 ? "Rising" :
-    timeline[30].price < input.currentPrice * 0.95 ? "Falling" : "Stable";
+    timeline[30].price > currentPrice * 1.05 ? "Rising" :
+    timeline[30].price < currentPrice * 0.95 ? "Falling" : "Stable";
 
   const shouldStore = netGainLoss > 0 && spoilageRisk !== "High" && bestDay >= 3;
   const decision: "Sell Now" | "Store" = shouldStore ? "Store" : "Sell Now";
 
-  const locCrop = tLocale(input.language, input.cropType, {});
+  const locCrop = tLocale(input.language, crop, {});
   const locTrend = tLocale(input.language, priceTrend === "Rising" ? "Rising" : priceTrend === "Falling" ? "Falling" : "Stable", {});
   const locSpoilage = tLocale(input.language, spoilageRisk, {});
 
@@ -1010,32 +1230,32 @@ export function simulatePriceForecast(input: PriceForecastInput): PriceForecastR
     } else if (input.language === 'or') {
       reasoning = `ପରବର୍ତ୍ତୀ ${bestDay} ଦିନ ମଧ୍ୟରେ ${locCrop} ମୂଲ୍ୟ ${priceTrend === "Rising" ? "ବଢିବା" : "ଅନୁକୂଳ ରହିବା"} ର ଆଶା ଅଛି | ଷ୍ଟୋରେଜ୍ ଖର୍ଚ୍ଚ ପରେ ${input.quantityQuintals} କ୍ୱିଣ୍ଟାଲ୍ ସଂରକ୍ଷଣ କରି ଆପଣ ଅତିରିକ୍ତ ଟଙ୍କା ${Math.round(netGainLoss).toLocaleString("en-IN")} ରୋଜଗାର କରିପାରିବେ | ନଷ୍ଟ ହେବାର ଆଶଙ୍କା ${locSpoilage.toLowerCase()} ଅଛି |`;
     } else {
-      reasoning = `Prices for ${input.cropType} are expected to ${priceTrend.toLowerCase() === "rising" ? "rise" : "remain favorable"} over the next ${bestDay} days. Storing ${input.quantityQuintals} quintals could earn you an additional Rs ${Math.round(netGainLoss).toLocaleString("en-IN")} after storage costs. Spoilage risk is ${spoilageRisk.toLowerCase()}.`;
+      reasoning = `Prices for ${crop} are expected to ${priceTrend.toLowerCase() === "rising" ? "rise" : "remain favorable"} over the next ${bestDay} days. Storing ${input.quantityQuintals} quintals could earn you an additional Rs ${Math.round(netGainLoss).toLocaleString("en-IN")} after storage costs. Spoilage risk is ${spoilageRisk.toLowerCase()}.`;
     }
   } else {
     if (spoilageRisk === "High") {
       if (input.language === 'hi') {
-        reasoning = `हालांकि कीमतों में सुधार हो सकता है, लेकिन ${bestDay} दिनों में ${locCrop} के खराब होने का जोखिम बहुत अधिक है। नुकसान से बचने के लिए अभी रु ${input.currentPrice}/क्विंटल पर बेचना बेहतर विकल्प है।`;
+        reasoning = `हालांकि कीमतों में सुधार हो सकता है, लेकिन ${bestDay} दिनों में ${locCrop} के खराब होने का जोखिम बहुत अधिक है। नुकसान से बचने के लिए अभी रु ${currentPrice}/क्विंटल पर बेचना बेहतर विकल्प है।`;
       } else if (input.language === 'or') {
-        reasoning = `ଯଦିଓ ମୂଲ୍ୟରେ ଉନ୍ନତି ହୋଇପାରେ, ${bestDay} ଦିନ ମଧ୍ୟରେ ${locCrop} ନଷ୍ଟ ହେବାର ଆଶଙ୍କା ବହୁତ ଅଧିକ | କ୍ଷତିରୁ ବଞ୍ଚିବା ପାଇଁ ବର୍ତ୍ତମାନ ଟଙ୍କା ${input.currentPrice}/କ୍ୱିଣ୍ଟାଲ୍ ରେ ବିକ୍ରି କରିବା ଏକ ଭଲ ବିକଳ୍ପ |`;
+        reasoning = `ଯଦିଓ ମୂଲ୍ୟରେ ଉନ୍ନତି ହୋଇପାରେ, ${bestDay} ଦିନ ମଧ୍ୟରେ ${locCrop} ନଷ୍ଟ ହେବାର ଆଶଙ୍କା ବହୁତ ଅଧିକ | କ୍ଷତିରୁ ବଞ୍ଚିବା ପାଇଁ ବର୍ତ୍ତମାନ ଟଙ୍କା ${currentPrice}/କ୍ୱିଣ୍ଟାଲ୍ ରେ ବିକ୍ରି କରିବା ଏକ ଭଲ ବିକଳ୍ପ |`;
       } else {
-        reasoning = `While prices may improve, the spoilage risk for ${input.cropType} over ${bestDay} days is too high. Selling now at Rs ${input.currentPrice}/quintal is the safer choice to avoid losses.`;
+        reasoning = `While prices may improve, the spoilage risk for ${crop} over ${bestDay} days is too high. Selling now at Rs ${currentPrice}/quintal is the safer choice to avoid losses.`;
       }
     } else if (priceTrend === "Falling") {
       if (input.language === 'hi') {
-        reasoning = `${locCrop} की कीमतें नीचे गिर रही हैं। अभी रु ${input.currentPrice}/क्विंटल पर बेचने से कीमतों में और गिरावट से बचा जा सकता है। भंडारण लागत संभावित लाभ से अधिक होगी।`;
+        reasoning = `${locCrop} की कीमतें नीचे गिर रही हैं। अभी रु ${currentPrice}/क्विंटल पर बेचने से कीमतों में और गिरावट से बचा जा सकता है। भंडारण लागत संभावित लाभ से अधिक होगी।`;
       } else if (input.language === 'or') {
-        reasoning = `${locCrop} ମୂଲ୍ୟ ହ୍ରାସ ପାଉଛି | ବର୍ତ୍ତମାନ ଟଙ୍କା ${input.currentPrice}/କ୍ୱିଣ୍ଟାଲ୍ ରେ ବିକ୍ରି କରିବା ଦ୍ୱାରା ମୂଲ୍ୟରେ ଅଧିକ ହ୍ରାସରୁ ରକ୍ଷା ମିଳିପାରିବ | ଷ୍ଟୋରେଜ୍ ଖର୍ଚ୍ଚ ସମ୍ଭାବ୍ୟ ଲାଭଠାରୁ ଅଧିକ ହେବ |`;
+        reasoning = `${locCrop} ମୂଲ୍ୟ ହ୍ରାସ ପାଉଛି | ବର୍ତ୍ତମାନ ଟଙ୍କା ${currentPrice}/କ୍ୱିଣ୍ଟାଲ୍ ରେ ବିକ୍ରି କରିବା ଦ୍ୱାରା ମୂଲ୍ୟରେ ଅଧିକ ହ୍ରାସରୁ ରକ୍ଷା ମିଳିପାରିବ | ଷ୍ଟୋରେଜ୍ ଖର୍ଚ୍ଚ ସମ୍ଭାବ୍ୟ ଲାଭଠାରୁ ଅଧିକ ହେବ |`;
       } else {
-        reasoning = `Prices for ${input.cropType} are trending downward. Selling now at Rs ${input.currentPrice}/quintal avoids further price drops. Storage costs would exceed potential gains.`;
+        reasoning = `Prices for ${crop} are trending downward. Selling now at Rs ${currentPrice}/quintal avoids further price drops. Storage costs would exceed potential gains.`;
       }
     } else {
       if (input.language === 'hi') {
-        reasoning = `वर्तमान बाजार की स्थिति अभी रु ${input.currentPrice}/क्विंटल पर ${locCrop} बेचने का सुझाव देती है। संभावित मूल्य सुधार रु ${input.storageCostPerDay}/क्विंटल/दिन की भंडारण लागत को उचित नहीं ठहराता है।`;
+        reasoning = `वर्तमान बाजार की स्थिति अभी रु ${currentPrice}/क्विंटल पर ${locCrop} बेचने का सुझाव देती है। संभावित मूल्य सुधार रु ${input.storageCostPerDay}/क्विंटल/दिन की भंडारण लागत को उचित नहीं ठहराता है।`;
       } else if (input.language === 'or') {
-        reasoning = `ବର୍ତ୍ତମାନର ବଜାର ସ୍ଥିତି ବର୍ତ୍ତମାନ ଟଙ୍କା ${input.currentPrice}/କ୍ୱିଣ୍ଟାଲ୍ ରେ ${locCrop} ବିକ୍ରି କରିବାକୁ ପରାମର୍ଶ ଦିଏ | ସମ୍ଭାବ୍ୟ ମୂଲ୍ୟ ବୃଦ୍ଧି ଟଙ୍କା ${input.storageCostPerDay}/କ୍ୱିଣ୍ଟାଲ୍/ଦିନର ଷ୍ଟୋରେଜ୍ ଖର୍ଚ୍ଚକୁ ଯଥାର୍ଥ କରେ ନାହିଁ |`;
+        reasoning = `ବର୍ତ୍ତମାନର ବଜାର ସ୍ଥିତି ବର୍ତ୍ତମାନ ଟଙ୍କା ${currentPrice}/କ୍ୱିଣ୍ଟାଲ୍ ରେ ${locCrop} ବିକ୍ରି କରିବାକୁ ପରାମର୍ଶ ଦିଏ | ସମ୍ଭାବ୍ୟ ମୂଲ୍ୟ ବୃଦ୍ଧି ଟଙ୍କା ${input.storageCostPerDay}/କ୍ୱିଣ୍ଟାଲ୍/ଦିନର ଷ୍ଟୋରେଜ୍ ଖର୍ଚ୍ଚକୁ ଯଥାର୍ଥ କରେ ନାହିଁ |`;
       } else {
-        reasoning = `Current market conditions suggest selling ${input.cropType} now at Rs ${input.currentPrice}/quintal. The potential price improvement doesn't justify storage costs of Rs ${input.storageCostPerDay}/quintal/day.`;
+        reasoning = `Current market conditions suggest selling ${crop} now at Rs ${currentPrice}/quintal. The potential price improvement doesn't justify storage costs of Rs ${input.storageCostPerDay}/quintal/day.`;
       }
     }
   }
@@ -1043,9 +1263,9 @@ export function simulatePriceForecast(input: PriceForecastInput): PriceForecastR
   return {
     decision,
     storeDays: shouldStore ? bestDay : 0,
-    currentPrice: input.currentPrice,
+    currentPrice: currentPrice,
     forecastedPrice,
-    priceChange: Math.round(((forecastedPrice - input.currentPrice) / input.currentPrice) * 100 * 10) / 10,
+    priceChange: Math.round(((forecastedPrice - currentPrice) / currentPrice) * 100 * 10) / 10,
     expectedGainLoss: Math.round(netGainLoss),
     storageCost: Math.round(totalStorageCost),
     spoilageRisk,
@@ -1144,6 +1364,28 @@ export function simulateRiskAdvisory(input: RiskAdvisoryInput): RiskAdvisoryResu
     reason: tLocale(input.language, "cc_well", { region: tLocale(input.language, input.region, {}), season: tLocale(input.language, input.season, {}) }),
   }));
 
+  // Recommended combinations for intercropping
+  const combinations: { crops: string[]; reason: string; profitBoost: number }[] = [];
+  const compMap: Record<string, { partner: string; reason: string }> = {
+    Maize: { partner: "Soybean", reason: "Maize provides shade while Soybean fixes nitrogen, improving overall soil health and yield." },
+    Cotton: { partner: "Groundnut", reason: "Groundnut acts as a cover crop, reducing weeding costs and adding nitrogen for Cotton." },
+    Rice: { partner: "Soybean", reason: "Post-rice soybean utilizes residual moisture and improves soil structure for next cycle." },
+    Wheat: { partner: "Maize", reason: "Relay cropping of Maize in late Wheat stages optimizes land use and seasonal transition." },
+  };
+
+  climate.suitableCrops.forEach(crop => {
+    if (compMap[crop] && climate.suitableCrops.includes(compMap[crop].partner)) {
+      const partner = compMap[crop].partner;
+      if (!combinations.some(c => c.crops.includes(crop) && c.crops.includes(partner))) {
+        combinations.push({
+          crops: [crop, partner],
+          reason: input.language === 'hi' ? "नाइट्रोजन स्थिरीकरण और बेहतर भूमि उपयोग" : input.language === 'or' ? "ଯବକ୍ଷାରଜାନ ସ୍ଥିରୀକରଣ ଏବଂ ଉନ୍ନତ ଜମି ବ୍ୟବହାର" : compMap[crop].reason,
+          profitBoost: 15,
+        });
+      }
+    }
+  });
+
   const seasonInsights: Record<string, string> = {
     Kharif: input.language === 'hi' 
       ? `${tLocale(input.language, input.region, {})} में खरीफ का मौसम (जून-अक्टूबर) मानसून की बारिश लाता है। पानी पसंद करने वाली फसलों पर ध्यान दें। उच्च आर्द्रता के कारण फंगल रोगों से सावधान रहें।`
@@ -1165,6 +1407,7 @@ export function simulateRiskAdvisory(input: RiskAdvisoryInput): RiskAdvisoryResu
   return {
     cropsToAvoid: cropsToAvoid.map(c => ({ ...c, cropName: tLocale(input.language, c.cropName, {}) })),
     safeCrops,
+    recommendedCombinations: combinations,
     seasonalInsight: seasonInsights[input.season] || seasonInsights["Kharif"],
   };
 }

@@ -155,9 +155,16 @@ RECOMMENDED_ACTIONS = {
 # Default recommendation for unknown diseases
 DEFAULT_ACTION = "Consult an agronomist for a detailed diagnosis and treatment plan."
 
-# ─── Platform Integration ───────────────────────────────────────────────────
 # Minimum confidence required to return a specific disease (else returns 'Uncertain')
-CONFIDENCE_THRESHOLD = 0.40  
+CONFIDENCE_THRESHOLD = 0.75  
+
+# ─── Healthy Detection Refinement (Smarter Logic) ──────────────────────────────
+# If top prediction is disease but "Healthy" exists, check this margin
+HEALTHY_MARGIN_THRESHOLD = 0.25
+
+# If infection area is below this % and disease confidence is below 85%, force Healthy
+INFECTION_HEALTHY_OVERRIDE = 10.0
+HEALTHY_OVERRIDE_CONFIDENCE = 0.85
 
 # Performance targets (latency logging)
 MAX_RESPONSE_TIME_MS = 2000

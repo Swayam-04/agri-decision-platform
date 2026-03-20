@@ -199,6 +199,33 @@ def _split_dataset(
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+#  Class Weighting Logic
+# ═════════════════════════════════════════════════════════════════════════════
+
+def get_class_weights(dataset: CropDiseaseDataset) -> torch.Tensor:
+    """
+    Calculate inverse-frequency class weights for the loss function.
+    Useful for balancing training when "Healthy" or certain diseases
+    have significantly fewer (or more) samples.
+    """
+    all_labels = dataset.get_labels()
+    counts = Counter(all_labels)
+    total_samples = len(all_labels)
+    num_classes = len(dataset.classes)
+    
+    # Calculate weights: W = Total / (num_classes * class_count)
+    weights = []
+    for i in range(num_classes):
+        cls_count = counts.get(i, 0)
+        if cls_count == 0:
+            weights.append(1.0) # Avoid division by zero
+        else:
+            weights.append(total_samples / (num_classes * cls_count))
+            
+    return torch.tensor(weights, dtype=torch.float32)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 #  Dataset Statistics
 # ═════════════════════════════════════════════════════════════════════════════
 

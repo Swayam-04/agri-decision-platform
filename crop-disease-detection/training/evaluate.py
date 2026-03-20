@@ -140,6 +140,30 @@ def evaluate_model(
     print(f"\n  ── Classification Report ──────────────────────────────────")
     print(report_str)
 
+    # ── 2.1 Healthy vs. Diseased Accuracy (Requirement 8) ──
+    is_healthy_label = np.array(["healthy" in name.lower() for name in class_names])
+    
+    # Map predictions/labels to binary (0: Diseased, 1: Healthy)
+    binary_labels = is_healthy_label[all_labels_arr].astype(int)
+    binary_preds = is_healthy_label[all_preds_arr].astype(int)
+    
+    h_v_d_acc = 100.0 * accuracy_score(binary_labels, binary_preds)
+    h_v_d_cm = confusion_matrix(binary_labels, binary_preds) # [[TN, FP], [FN, TP]] where 1 is Healthy
+    # TN: Diseased correctly ID'd
+    # FP: Diseased misclassified as Healthy (False Healthy)
+    # FN: Healthy misclassified as Diseased (False Disease)
+    # TP: Healthy correctly ID'd
+    
+    print(f"\n  ┌─ Healthy vs. Diseased Analysis ───────────────────────────┐")
+    print(f"  │  Binary Accuracy: {h_v_d_acc:>8.2f}%                               │")
+    print(f"  │  ─────────────────────────────────────────────────────────│")
+    print(f"  │  Correct Healthy: {h_v_d_cm[1,1]:>6} / {(binary_labels == 1).sum():<6}                   │")
+    print(f"  │  Correct Disease: {h_v_d_cm[0,0]:>6} / {(binary_labels == 0).sum():<6}                   │")
+    print(f"  │  ─────────────────────────────────────────────────────────│")
+    print(f"  │  False Disease:   {h_v_d_cm[1,0]:>6} (Healthy called Diseased)   │")
+    print(f"  │  False Healthy:   {h_v_d_cm[0,1]:>6} (Diseased called Healthy)   │")
+    print(f"  └───────────────────────────────────────────────────────────┘")
+
     # ── 3. Per-Class Accuracy ──
     per_class_acc = _compute_per_class_accuracy(
         all_labels_arr, all_preds_arr, class_names

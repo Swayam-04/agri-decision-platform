@@ -17,10 +17,61 @@ export default function DiseaseDetectPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DiseaseDetectionResult | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const startCamera = async () => {
+    try {
+      setError(null);
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" } // Prefer back camera on mobile
+      });
+      setStream(mediaStream);
+      setIsCameraOpen(true);
+    } catch (err) {
+      console.error("Camera access error:", err);
+      setError(t("detect.cameraError") || "Camera access denied or not available");
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setIsCameraOpen(false);
+  };
+
+  const captureImage = () => {
+    const video = document.getElementById("camera-preview") as HTMLVideoElement;
+    const canvas = document.createElement("canvas");
+    if (video) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = canvas.toDataURL("image/jpeg");
+      setImagePreview(imageData);
+      stopCamera();
+      setResult(null);
+    }
+  };
 
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Requirement: Validate file size (5MB) and format
+      if (file.size > 5 * 1024 * 1024) {
+        setError(t("detect.fileTooLarge") || "File size exceeds 5MB limit");
+        return;
+      }
+      if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
+        setError(t("detect.invalidFormat") || "Only JPG/PNG formats are supported");
+        return;
+      }
+
+      setError(null);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -28,11 +79,12 @@ export default function DiseaseDetectPage() {
       };
       reader.readAsDataURL(file);
     }
-  }, []);
+  }, [t]);
 
   async function analyzeImage() {
-    if (!imagePreview) return;
+    if (!imagePreview || result) return;
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/disease-detect", {
         method: "POST",
@@ -44,8 +96,9 @@ export default function DiseaseDetectPage() {
         throw new Error(data.error || "Failed to analyze image");
       }
       setResult(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || "An error occurred during analysis");
       setResult(null);
     } finally {
       setLoading(false);
@@ -88,32 +141,86 @@ export default function DiseaseDetectPage() {
               </Select>
             </div>
 
+            {/* ERROR ALERT */}
+            {error && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <p>{error}</p>
+              </div>
+            )}
+
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1.5">{t("detect.leafImage")}</label>
-              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-emerald-400 transition-colors">
-                {imagePreview ? (
-                  <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground block mb-2">{t("detect.leafImage")}</label>
+              
+              {/* Requirement: Dual Input Buttons */}
+              {!imagePreview && !isCameraOpen && (
+                <div className="flex gap-2 mb-4">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 gap-2" 
+                    onClick={startCamera}
+                  >
+                    <Microscope className="h-4 w-4" /> {/* Swap with Camera icon if available */}
+                    Camera
+                  </Button>
+                  <div className="relative flex-1">
+                    <Button variant="outline" className="w-full gap-2">
+                      <Upload className="h-4 w-4" />
+                      Upload
+                    </Button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="border-2 border-dashed border-border rounded-lg overflow-hidden min-h-[200px] flex flex-col items-center justify-center bg-muted/30 relative">
+                {isCameraOpen ? (
+                  <div className="w-full h-full relative">
+                    <video 
+                      id="camera-preview" 
+                      autoPlay 
+                      playsInline 
+                      ref={(el) => { if (el) el.srcObject = stream; }}
+                      className="w-full h-full object-cover min-h-[300px]"
+                    />
+                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-3 px-4">
+                      <Button onClick={captureImage} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full h-12 w-12 p-0">
+                        <Microscope className="h-6 w-6" />
+                      </Button>
+                      <Button variant="destructive" onClick={stopCamera} className="rounded-full h-12 w-12 p-0">
+                        <AlertCircle className="h-6 w-6 rotate-45" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : imagePreview ? (
+                  <div className="p-4 space-y-3 text-center w-full">
                     <img
                       src={imagePreview}
-                      alt="Uploaded crop leaf"
-                      className="mx-auto max-h-48 rounded-lg object-contain"
+                      alt="Captured/Uploaded crop leaf"
+                      className="mx-auto max-h-56 rounded-lg object-contain border"
                     />
-                    <p className="text-xs text-muted-foreground">{t("detect.imageUploaded")}</p>
+                    <div className="flex justify-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs text-muted-foreground hover:text-red-500"
+                        onClick={() => { setImagePreview(null); setResult(null); }}
+                      >
+                        Retake / Clear
+                      </Button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">{t("detect.clickToUpload")}</p>
-                    <p className="text-[10px] text-muted-foreground">{t("detect.supportedFormats")}</p>
+                  <div className="p-8 text-center space-y-2">
+                    <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground opacity-20" />
+                    <p className="text-xs text-muted-foreground">Select an option above to provide an image</p>
                   </div>
                 )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  style={{ position: "relative" }}
-                />
               </div>
             </div>
 
@@ -150,24 +257,75 @@ export default function DiseaseDetectPage() {
                     )}
                     {t("detect.resultTitle")}
                   </CardTitle>
-                  <Badge className={severityColors[result.severity]}>
-                    {t(`advisory.risk.${result.severity}`) || result.severity} {result.severity !== "Healthy" && t("detect.severity")}
-                  </Badge>
+                  <div className="flex gap-2">
+                    {result.isStable !== undefined && (
+                      <Badge variant="outline" className={cn(
+                        "flex items-center gap-1",
+                        result.isStable ? "border-emerald-500 text-emerald-600 bg-emerald-50" : "border-amber-500 text-amber-600 bg-amber-50"
+                      )}>
+                        {result.isStable ? <ShieldCheck className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                        {t(result.isStable ? "detect.stablePrediction" : "detect.uncertainPrediction")}
+                      </Badge>
+                    )}
+                    <Badge className={severityColors[result.severity]}>
+                      {t(`advisory.risk.${result.severity}`) || result.severity} {result.severity !== "Healthy" && t("detect.severity")}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-bold text-foreground">{result.diseaseName}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="text-xs text-muted-foreground">{t("detect.confidence")}</div>
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-500 rounded-full"
-                        style={{ width: `${result.confidence * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-medium">{Math.round(result.confidence * 100)}%</span>
+                  <h3 className="text-lg font-bold text-foreground mb-3">{t("detect.analysisResult")}</h3>
+                  
+                  {/* Requirement: Top-2 Prediction Logic */}
+                  <div className="space-y-4">
+                    {result.topPredictions ? (
+                      result.topPredictions.slice(0, 2).map((pred, idx) => (
+                        <div key={idx} className="space-y-1.5">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={cn("font-medium", idx === 0 ? "text-foreground" : "text-muted-foreground")}>
+                              {idx + 1}. {pred.label}
+                            </span>
+                            <span className="font-mono font-bold">{Math.round(pred.confidence * 100)}%</span>
+                          </div>
+                          <div className="h-2.5 bg-muted rounded-full overflow-hidden border border-border/50">
+                            <div
+                              className={cn(
+                                "h-full rounded-full transition-all duration-1000",
+                                idx === 0 ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]" : "bg-emerald-500/40"
+                              )}
+                              style={{ width: `${pred.confidence * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">1. {result.diseaseName}</span>
+                          <span className="font-mono font-bold">{Math.round(result.confidence * 100)}%</span>
+                        </div>
+                        <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-500 rounded-full"
+                            style={{ width: `${result.confidence * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
+                  <span className="text-sm font-medium text-muted-foreground">{t("detect.infectionArea")}</span>
+                  <span className={cn(
+                    "text-sm font-bold",
+                    result.severity === "High" ? "text-red-500" :
+                    result.severity === "Medium" ? "text-amber-500" :
+                    "text-emerald-500"
+                  )}>
+                    {result.infectionArea || "0%"}
+                  </span>
                 </div>
                 <p className="text-sm text-muted-foreground">{result.description}</p>
               </CardContent>
@@ -183,7 +341,7 @@ export default function DiseaseDetectPage() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {result.remedies.map((r, i) => (
+                    {result.remedies.map((r: string, i: number) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
                         <ShieldCheck className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
                         <span>{r}</span>
@@ -197,16 +355,16 @@ export default function DiseaseDetectPage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-emerald-500" />
-                  {t("detect.preventive")}
+                  <Shield className={cn("h-4 w-4", result.severity === "Healthy" ? "text-emerald-500" : "text-emerald-500")} />
+                  {result.severity === "Healthy" ? t("detect.healthyMaintenance") : t("detect.preventive")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {result.preventiveMeasures.map((p, i) => (
+                  {result.preventiveMeasures.map((pm: string, i: number) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
-                      <span>{p}</span>
+                      <ShieldCheck className={cn("h-4 w-4 mt-0.5 shrink-0", result.severity === "Healthy" ? "text-emerald-500" : "text-emerald-500")} />
+                      <span>{pm}</span>
                     </li>
                   ))}
                 </ul>

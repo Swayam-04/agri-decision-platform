@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CROP_LIST, REGION_LIST, SEASON_LIST } from "@/lib/types";
 import type { ProfitPredictionResult } from "@/lib/types";
-import { TrendingUp, Loader2, IndianRupee, AlertTriangle, BarChart3 } from "lucide-react";
+import { TrendingUp, Loader2, IndianRupee, AlertTriangle, BarChart3, ArrowUpRight } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ProfitPredictPage() {
   const { t, language } = useTranslation();
+  const [isMultiCrop, setIsMultiCrop] = useState(false);
+  const [selectedCrops, setSelectedCrops] = useState<string[]>(["Maize", "Tomato"]);
   const [cropType, setCropType] = useState("Rice");
   const [region, setRegion] = useState("Punjab");
   const [season, setSeason] = useState("Kharif");
@@ -25,12 +27,19 @@ export default function ProfitPredictPage() {
   async function predict() {
     setLoading(true);
     try {
+      const payload = isMultiCrop 
+        ? { cropTypes: selectedCrops, region, acreage: parseFloat(acreage), season, irrigationType, soilType }
+        : { cropType, region, acreage: parseFloat(acreage), season, irrigationType, soilType };
+
       const res = await fetch("/api/profit-predict", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-language": language },
-        body: JSON.stringify({ cropType, region, acreage: parseFloat(acreage), season, irrigationType, soilType }),
+        body: JSON.stringify(payload),
       });
-      setResult(await res.json());
+      const data = await res.json();
+      console.log("Profit Debug - Selected Crops:", isMultiCrop ? selectedCrops : [cropType]);
+      console.log("Profit Debug - Result Keys:", Object.keys(data.individualProfits || {}));
+      setResult(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -57,15 +66,44 @@ export default function ProfitPredictPage() {
             <CardTitle className="text-sm">{t("profit.farmDetails")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-1.5">
+            <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-medium text-muted-foreground">{t("detect.cropType")}</label>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase text-blue-500">{isMultiCrop ? "Multi-Crop" : "Single"}</span>
+                <input 
+                  type="checkbox" 
+                  checked={isMultiCrop} 
+                  onChange={(e) => setIsMultiCrop(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {!isMultiCrop ? (
               <Select value={cropType} onValueChange={setCropType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {CROP_LIST.map((c) => <SelectItem key={c} value={c}>{t(`crops.${c}`)}</SelectItem>)}
                 </SelectContent>
               </Select>
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 border rounded-md p-2 bg-muted/20 max-h-40 overflow-y-auto">
+                {CROP_LIST.map((c) => (
+                  <label key={c} className="flex items-center gap-2 text-xs">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedCrops.includes(c)}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedCrops([...selectedCrops, c]);
+                        else setSelectedCrops(selectedCrops.filter(sc => sc !== c));
+                      }}
+                      className="w-3.5 h-3.5 rounded border-gray-300"
+                    />
+                    {t(`crops.${c}`)}
+                  </label>
+                ))}
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">{t("advisory.regionLabel")}</label>
@@ -144,6 +182,15 @@ export default function ProfitPredictPage() {
                     </p>
                   </div>
                 </div>
+
+                {result.netGainPercent !== undefined && result.netGainPercent > 0 && (
+                  <div className="mt-4 flex items-center justify-center">
+                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200 py-1 px-3 gap-1 animate-bounce-subtle">
+                      <TrendingUp className="h-3 w-3" />
+                      +{result.netGainPercent}% Net Gain vs Single Crop
+                    </Badge>
+                  </div>
+                )}
                 {/* Prominent Profit Range & Total */}
                 <div className="mt-6 pt-6 border-t border-[rgba(61,31,10,0.1)]">
                   <div className="bg-white/40 dark:bg-black/20 rounded-2xl p-4 border border-[rgba(61,31,10,0.05)] shadow-sm">
@@ -180,34 +227,92 @@ export default function ProfitPredictPage() {
               </CardContent>
             </Card>
 
-            {/* Yield & Price */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
+            {/* Yield & Price (Only for single crop) */}
+            {!isMultiCrop && (
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-blue-500" />
+                      {t("profit.expYield")}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">{result.expectedYieldPerAcre} <span className="text-sm font-normal text-muted-foreground">{result.yieldUnit}/{t("profit.perAcre")}</span></p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <IndianRupee className="h-4 w-4 text-emerald-500" />
+                      {t("profit.marketPrice")}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold">Rs {result.expectedMarketPrice.toLocaleString("en-IN")} <span className="text-sm font-normal text-muted-foreground">/{t(`crops.${cropType}`) || "quintal"}</span></p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t("profit.range")} Rs {result.marketPriceRange.low.toLocaleString("en-IN")} - Rs {result.marketPriceRange.high.toLocaleString("en-IN")}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Individual Breakdown for Multi-Crop */}
+            {isMultiCrop && result.individualProfits && (
+              <Card className="border-emerald-200 bg-emerald-50/30 dark:bg-emerald-900/10">
+                <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-blue-500" />
-                    {t("profit.expYield")}
+                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                    Intercropping Result
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">{result.expectedYieldPerAcre} <span className="text-sm font-normal text-muted-foreground">{result.yieldUnit}/{t("profit.perAcre")}</span></p>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">Individual Profits</p>
+                    {/* Requirement: Only show selected crops */}
+                    {Object.entries(result.individualProfits || {})
+                      .filter(([crop]) => selectedCrops.includes(crop))
+                      .map(([crop, data]) => (
+                        <div key={crop} className="flex items-center justify-between text-sm">
+                          {/* Requirement: Proper name without 'crops.' plus translation */}
+                          <span className="font-medium">{t(`crops.${crop.replace("crops.", "")}`)}</span>
+                          <span className="font-bold text-emerald-700 dark:text-emerald-300">Rs {data.profitPerAcre.toLocaleString("en-IN")}</span>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* Debug Logging moved to predict function */}
+                  {process.env.NODE_ENV === "development" && (
+                    <div className="hidden">
+                      {/* Logging occurs in the console during predict() */}
+                    </div>
+                  )}
+
+                  <div className="pt-3 border-t border-emerald-200/50">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-bold">Combined Profit</span>
+                      <span className="text-lg font-black text-emerald-600">Rs {(result.profitPerAcre || 0).toLocaleString("en-IN")}/acre</span>
+                    </div>
+                    {result.netGainPercent !== undefined && (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                        Net Gain: +{result.netGainPercent}% vs single crop
+                      </div>
+                    )}
+                  </div>
+
+                  {result.recommendation && (
+                    <div className="mt-4 p-3 rounded-xl bg-white/60 dark:bg-emerald-950/40 border border-emerald-200/50">
+                      <p className="text-[10px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-widest mb-1">Recommendation</p>
+                      <p className="text-xs text-emerald-900 dark:text-emerald-100 leading-relaxed font-medium">
+                        {result.recommendation}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <IndianRupee className="h-4 w-4 text-emerald-500" />
-                    {t("profit.marketPrice")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">Rs {result.expectedMarketPrice.toLocaleString("en-IN")} <span className="text-sm font-normal text-muted-foreground">/{t(`crops.${cropType}`) || "quintal"}</span></p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {t("profit.range")} Rs {result.marketPriceRange.low.toLocaleString("en-IN")} - Rs {result.marketPriceRange.high.toLocaleString("en-IN")}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            )}
 
             {/* Cost Breakdown */}
             <Card>

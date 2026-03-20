@@ -6,15 +6,15 @@ export async function POST(req: NextRequest) {
     const language = req.headers.get("x-language") || "en";
     const body = await req.json();
     body.language = language;
-    const { cropType, region, acreage, season, irrigationType, soilType } = body;
+    const { cropType, cropTypes, region, acreage, season, irrigationType, soilType } = body;
 
-    if (!cropType || !region || !acreage || !season || !irrigationType || !soilType) {
+    if ((!cropType && (!cropTypes || cropTypes.length === 0)) || !region || !acreage || !season || !irrigationType || !soilType) {
       return NextResponse.json({ error: "All fields required" }, { status: 400 });
     }
 
     await new Promise((r) => setTimeout(r, 700));
 
-    const result = simulateProfitPrediction({ cropType, region, acreage, season, irrigationType, soilType , language });
+    const result = simulateProfitPrediction({ cropType, cropTypes, region, acreage, season, irrigationType, soilType, language });
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Failed to predict profit" }, { status: 500 });

@@ -28,7 +28,7 @@ import numpy as np
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from models.classifier import build_model
-from dataset.loader import get_dataloaders
+from dataset.loader import get_dataloaders, get_class_weights
 
 
 class Trainer:
@@ -75,10 +75,20 @@ class Trainer:
         print(f"{'='*60}\n")
 
         # ── Data (70/15/15 split) ──
-        self.train_loader, self.val_loader, _, self.class_names = get_dataloaders(
+        dataloader_res = get_dataloaders(
             data_dir=data_dir,
             batch_size=batch_size,
             print_stats=True,
+        )
+        self.train_loader = dataloader_res[0]
+        self.val_loader = dataloader_res[1]
+        self.test_loader = dataloader_res[2]
+        self.class_names = dataloader_res[3]
+        
+        # Need full dataset instance for weights
+        from dataset.loader import CropDiseaseDataset
+        full_dataset = CropDiseaseDataset(
+            root_dir=data_dir or config.DATA_DIR,
         )
 
         # ── Model — freeze early conv layers for transfer learning ──
@@ -91,17 +101,25 @@ class Trainer:
             freeze_ratio=_ratio,
         ).to(self.device)
 
-        # ── Loss function (categorical cross-entropy) ──
-        self.criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+        # ── Loss function (categorical cross-entropy with weights) ──
+        # Calculate class weights for current dataset
+        self.class_weights = get_class_weights(full_dataset).to(self.device)
+        self.criterion = nn.CrossEntropyLoss(
+            weight=self.class_weights,
+            label_smoothing=0.1
+        )
 
-        # ── Optimizer: Adam ──
+        # ── Optimizer & Scheduler ──
+        self._init_optimizer()
+
+    def _init_optimizer(self):
+        """Initialize or reset optimizer/scheduler (useful for fine-tuning)."""
         self.optimizer = Adam(
             self.model.parameters(),
             lr=self.learning_rate,
             weight_decay=config.WEIGHT_DECAY,
         )
 
-        # ── LR Scheduler ──
         if config.SCHEDULER == "cosine":
             self.scheduler = CosineAnnealingLR(
                 self.optimizer, T_max=self.num_epochs
@@ -112,6 +130,15 @@ class Trainer:
                 step_size=config.STEP_SIZE,
                 gamma=config.GAMMA,
             )
+
+    def unfreeze_and_fine_tune(self, fine_tune_lr: float = 1e-5):
+        """Unfreeze all layers for the second phase of training."""
+        print(f"\n[Trainer] Phase 2: Unfreezing entire model for fine-tuning...")
+        for param in self.model.parameters():
+            param.requires_grad = True
+        
+        self.learning_rate = fine_tune_lr
+        self._init_optimizer()
 
         # ── Tracking ──
         self.best_val_loss = float("inf")

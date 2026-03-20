@@ -11,9 +11,12 @@ export interface DiseaseDetectionResult {
   diseaseName: string;
   severity: "Low" | "Medium" | "High" | "Healthy";
   confidence: number;
+  infectionArea?: string; // New: Percentage of leaf area infected
+  isStable?: boolean; // New: Flag for prediction stability
   description: string;
   remedies: string[];
   preventiveMeasures: string[];
+  topPredictions?: { label: string; confidence: number }[];
 }
 
 export interface DiseaseRiskInput {
@@ -37,7 +40,8 @@ export interface DiseaseRiskResult {
 
 export interface ProfitPredictionInput {
   language?: string;
-  cropType: string;
+  cropType?: string;
+  cropTypes?: string[];
   region: string;
   acreage: number;
   season: string;
@@ -57,13 +61,20 @@ export interface ProfitPredictionResult {
   profitRange: { low: number; high: number };
   confidenceScore: number;
   riskFactors: string[];
+  // Multi-crop additions
+  individualProfits?: Record<string, ProfitPredictionResult>;
+  combinedProfit?: number;
+  netGainPercent?: number;
+  recommendation?: string;
 }
 
 export interface PriceForecastInput {
   language?: string;
-  cropType: string;
+  cropType?: string;
+  cropTypes?: string[];
   region: string;
-  currentPrice: number;
+  currentPrice?: number;
+  currentPrices?: Record<string, number>;
   quantityQuintals: number;
   storageCostPerDay: number;
 }
@@ -80,6 +91,9 @@ export interface PriceForecastResult {
   priceTrend: "Rising" | "Stable" | "Falling";
   priceTimeline: { day: number; price: number }[];
   reasoning: string;
+  // Multi-crop additions
+  individualDecisions?: Record<string, PriceForecastResult>;
+  combinedStrategy?: string;
 }
 
 export interface CropRiskAdvisory {
@@ -102,6 +116,7 @@ export interface RiskAdvisoryInput {
 export interface RiskAdvisoryResult {
   cropsToAvoid: CropRiskAdvisory[];
   safeCrops: { name: string; reason: string }[];
+  recommendedCombinations?: { crops: string[]; reason: string; profitBoost: number }[];
   seasonalInsight: string;
 }
 
@@ -310,7 +325,8 @@ export type CropType =
   | "Maize"
   | "Soybean"
   | "Groundnut"
-  | "Pepper";
+  | "Pepper"
+  | "Beans";
 
 export type Region =
   | "Andhra Pradesh"
@@ -348,7 +364,7 @@ export type Season = "Kharif" | "Rabi" | "Zaid";
 
 export const CROP_LIST: CropType[] = [
   "Rice", "Wheat", "Cotton", "Sugarcane", "Tomato",
-  "Potato", "Onion", "Maize", "Soybean", "Groundnut", "Pepper",
+  "Potato", "Onion", "Maize", "Soybean", "Groundnut", "Pepper", "Beans",
 ];
 
 export const REGION_LIST: Region[] = [

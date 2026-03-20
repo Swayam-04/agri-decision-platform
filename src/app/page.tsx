@@ -26,6 +26,7 @@ import {
 import Link from "next/link";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { VoiceAssistantWidget } from "@/components/VoiceAssistantWidget";
 
 interface FullResults {
   diseaseRisk: DiseaseRiskResult | null;
@@ -45,6 +46,7 @@ export default function DashboardPage() {
   const [results, setResults] = useState<FullResults | null>(null);
   const { theme, toggleTheme } = useTheme();
   const { t, language } = useTranslation();
+  const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
 
   async function runFullAnalysis() {
     setLoading(true);
@@ -232,7 +234,7 @@ export default function DashboardPage() {
           <QuickLinkCard icon={<Droplets className="h-6 w-6 text-[#16a34a]" />} title={t("card.smartIrrigation.title")} description={t("card.smartIrrigation.desc")} href="/irrigation" watermark="💧" />
           <QuickLinkCard icon={<Bug className="h-6 w-6 text-[#6b4423]" />} title={t("card.pestOutbreak.title")} description={t("card.pestOutbreak.desc")} href="/pest-outbreak" watermark="🌽" />
           <QuickLinkCard icon={<MessageSquare className="h-6 w-6 text-[#16a34a]" />} title={t("card.smsAlerts.title")} description={t("card.smsAlerts.desc")} href="/sms-alerts" watermark="📱" />
-          <QuickLinkCard icon={<Bot className="h-6 w-6 text-[#f59e0b]" />} title={t("card.aiAssistant.title")} description={t("card.aiAssistant.desc")} href="/chatbot" watermark="🌾" />
+          <QuickLinkCard icon={<Bot className="h-6 w-6 text-[#f59e0b]" />} title={t("card.aiAssistant.title")} description={t("card.aiAssistant.desc")} href="/chatbot" watermark="🌾" onClick={(e) => { e.preventDefault(); setIsVoiceAssistantOpen(true); }} />
         </div>
       )}
 
@@ -502,14 +504,16 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      <VoiceAssistantWidget open={isVoiceAssistantOpen} onOpenChange={setIsVoiceAssistantOpen} />
     </div>
   );
 }
 
-function QuickLinkCard({ icon, title, description, href, watermark = "🌾" }: { icon: React.ReactNode; title: string; description: string; href: string; watermark?: string }) {
+function QuickLinkCard({ icon, title, description, href, watermark = "🌾", onClick }: { icon: React.ReactNode; title: string; description: string; href: string; watermark?: string; onClick?: (e: React.MouseEvent) => void }) {
   const { t } = useTranslation();
   return (
-    <Link href={href}>
+    <Link href={href} onClick={onClick}>
       <Card className="card-earth rounded-[24px] hover:shadow-md transition-all cursor-pointer h-full relative overflow-hidden group">
         <span className="absolute right-2 top-2 text-6xl opacity-[0.12] pointer-events-none group-hover:opacity-20 transition-opacity">{watermark}</span>
         <CardContent className="pt-5 pb-5 relative">

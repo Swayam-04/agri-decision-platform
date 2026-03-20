@@ -20,6 +20,8 @@ import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
 import numpy as np
+import hashlib
+import io
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
@@ -104,7 +106,22 @@ class Predictor:
             transforms.Normalize(mean=config.IMAGE_MEAN, std=config.IMAGE_STD),
         ])
 
+        # ── Stability Setup (Requirement 2) ──
+        torch.manual_seed(42)
+        np.random.seed(42)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(42)
+        
+        # In-memory cache to ensure same image -> same result (Requirement 1)
+        self.prediction_cache = {}
+
         print(f"[Predictor] Ready — {num_classes} classes, device: {self.device}")
+
+    def _get_image_hash(self, pil_image):
+        """Generates a unique MD5 hash for the image content."""
+        img_byte_arr = io.BytesIO()
+        pil_image.save(img_byte_arr, format='PNG')
+        return hashlib.md5(img_byte_arr.getvalue()).hexdigest()
 
     def _get_recommendation(
         self, disease_class: str, severity: str
@@ -162,17 +179,20 @@ class Predictor:
                 f"Expected file path or PIL Image, got {type(image_input)}"
             )
 
-        # ── 1. Severity Estimation (using original size/color) ──
-        cv2_image = self.severity_estimator.pil_to_cv2(pil_image)
-        severity_metrics = self.severity_estimator.estimate(cv2_image)
+        # ── 1. Stability Check: Cache (Requirement 1) ──
+        image_hash = self._get_image_hash(pil_image)
+        if image_hash in self.prediction_cache:
+            return self.prediction_cache[image_hash]
 
-        # ── 2. Disease Classification ──
-        # Preprocess — matches training val/test pipeline exactly
+        # ── 2. Majority Voting / Averaging (Requirement 4) ──
+        # Run model 3 times and average probabilities for stability
         tensor = self.transform(pil_image).unsqueeze(0).to(self.device)
-
-        # Forward pass
-        logits = self.model(tensor)
-        probabilities = F.softmax(logits, dim=1).squeeze(0)
+        all_probs = []
+        for _ in range(3):
+            logits = self.model(tensor)
+            all_probs.append(F.softmax(logits, dim=1).squeeze(0))
+        
+        probabilities = torch.stack(all_probs).mean(dim=0)
 
         # Top-k probability distribution
         top_probs, top_indices = probabilities.topk(min(self.top_k, len(self.class_names)))
@@ -188,35 +208,84 @@ class Predictor:
         predicted_disease = top_predictions[0]["label"]
         confidence = top_predictions[0]["confidence"]
         
-        # Apply Confidence Threshold
+        # ── 3. Confidence Stabilization: Margin Logic ──
+        # Prevent flipping between classes if they are too close
+        if len(top_predictions) >= 2:
+            top1_conf = top_predictions[0]["confidence"]
+            top2_conf = top_predictions[1]["confidence"]
+            if (top1_conf - top2_conf) < 0.10: # 10% Margin for general stability
+                return {
+                    "Disease": "Uncertain – Classes too similar",
+                    "Confidence": f"{top1_conf*100:.1f}%",
+                    "Severity": "N/A",
+                    "Infection Area": "0%",
+                    "Recommendation": "The AI is seeing features of multiple conditions. Please try a clearer image.",
+                    "isStable": False
+                }
+
+        # ── 4. Healthy Detection Layer (Requirement 1) ──
+        healthy_idx = -1
+        for i, pred in enumerate(top_predictions):
+            if "healthy" in pred["label"].lower():
+                healthy_idx = i
+                break
+        
+        # Rule: If disease confidence < 90% AND healthy exists, check 25% margin
+        is_likely_healthy = False
+        if "healthy" not in predicted_disease.lower() and healthy_idx != -1:
+            healthy_conf = top_predictions[healthy_idx]["confidence"]
+            if confidence < 0.90 and (confidence - healthy_conf) < config.HEALTHY_MARGIN_THRESHOLD:
+                is_likely_healthy = True
+                display_disease = "Likely Healthy"
+
+        # ── 5. Confidence Threshold (Requirement 2) ──
         if confidence < config.CONFIDENCE_THRESHOLD:
-            # If uncertain, mark as such but keep top_predictions for review
             return {
-                "predicted_disease": "Uncertain / Requires Review",
-                "confidence": confidence,
-                "severity": "Unknown",
-                "infected_area_pct": severity_metrics["infected_area_pct"],
-                "recommended_action": "Confidence too low for automated diagnosis. Please capture a clearer image or consult an expert.",
-                "top_predictions": top_predictions,
-                "low_confidence_flag": True
+                "Disease": "Uncertain – Please retake image",
+                "Confidence": f"{confidence*100:.1f}%",
+                "Severity": "N/A",
+                "Infection Area": "0%",
+                "Recommendation": "Confidence too low for reliable diagnosis. Ensure good lighting.",
+                "isStable": False
             }
 
-        # Override severity for healthy plants
-        if "healthy" in predicted_disease.lower():
-            severity = "None"
-            recommended_action = self._get_recommendation("healthy", "Low")
+        # Step 5: Infection Area Detection
+        cv2_img = self.severity_estimator.pil_to_cv2(pil_image)
+        severity_metrics = self.severity_estimator.estimate(cv2_img)
+        infection_pct = severity_metrics["infected_area_pct"]
+
+        # ── 6. Healthy Override Rule (Requirement 3) ──
+        # If infection < 10% AND disease confidence < 85% -> Healthy
+        if "healthy" not in predicted_disease.lower() and not is_likely_healthy:
+            if infection_pct < config.INFECTION_HEALTHY_OVERRIDE and confidence < config.HEALTHY_OVERRIDE_CONFIDENCE:
+                is_likely_healthy = True
+                display_disease = "Healthy (Override)"
+
+        # Override severity and naming for healthy cases
+        if "healthy" in predicted_disease.lower() or is_likely_healthy:
+            severity = "Low"
+            display_disease = "Healthy" if "healthy" in predicted_disease.lower() else display_disease
+            infection_pct = infection_pct if not "healthy" in predicted_disease.lower() else 0.0
+            recommended_action = "No action needed. Periodic monitoring recommended."
         else:
             severity = severity_metrics["severity"]
+            display_disease = predicted_disease
             recommended_action = self._get_recommendation(predicted_disease, severity)
 
-        return {
-            "predicted_disease": predicted_disease,
-            "confidence": top_predictions[0]["confidence"],
-            "severity": severity,
-            "infected_area_pct": severity_metrics["infected_area_pct"],
-            "recommended_action": recommended_action,
+        # Final Result
+        result = {
+            "Disease": display_disease.replace("___", " → ").replace("_", " "),
+            "Confidence": f"{confidence * 100:.1f}%",
+            "Severity": severity,
+            "Infection Area": f"{infection_pct}%",
+            "Recommendation": recommended_action,
             "top_predictions": top_predictions,
+            "isStable": True
         }
+
+        # Cache result
+        self.prediction_cache[image_hash] = result
+        return result
 
     @torch.no_grad()
     def predict_batch(self, image_inputs: List[Union[str, Image.Image]]) -> List[Dict]:
@@ -326,23 +395,24 @@ def main():
 
     # ── Display results ──
     print(f"\n{'═'*65}")
-    print(f"  🌿 Predicted Disease:  {result['predicted_disease']}")
-    print(f"  📊 Confidence:         {result['confidence']*100:.1f}%")
-    print(f"  ⚠️  Severity:           {result['severity']}")
-    print(f"  📉 Infected Area:      {result['infected_area_pct']:.1f}%")
+    print(f"  🌿 Predicted Disease:  {result.get('Disease', 'N/A')}")
+    print(f"  📊 Confidence:         {result.get('Confidence', 'N/A')}")
+    print(f"  ⚠️  Severity:           {result.get('Severity', 'N/A')}")
     print(f"{'═'*65}")
 
-    print(f"\n  💡 Recommended Action:")
-    print(f"     {result['recommended_action']}")
+    if "Recommendation" in result:
+        print(f"\n  💡 Recommended Action:")
+        print(f"     {result['Recommendation']}")
 
-    print(f"\n  Top {len(result['top_predictions'])} Probability Distribution:")
-    print(f"  {'─'*50}")
-    for i, pred in enumerate(result["top_predictions"], 1):
-        bar_len = int(pred["confidence"] * 30)
-        bar = "█" * bar_len + "░" * (30 - bar_len)
-        display_name = pred['label'].replace('___', ' → ').replace('_', ' ')
-        print(f"  {i}. {display_name}")
-        print(f"     {bar}  {pred['probability_pct']:5.1f}%")
+    if "top_predictions" in result:
+        print(f"\n  Top {len(result['top_predictions'])} Probability Distribution:")
+        print(f"  {'─'*50}")
+        for i, pred in enumerate(result["top_predictions"], 1):
+            bar_len = int(pred["confidence"] * 30)
+            bar = "█" * bar_len + "░" * (30 - bar_len)
+            display_name = pred['label'].replace('___', ' → ').replace('_', ' ')
+            print(f"  {i}. {display_name}")
+            print(f"     {bar}  {pred['probability_pct']:5.1f}%")
     print()
 
 
