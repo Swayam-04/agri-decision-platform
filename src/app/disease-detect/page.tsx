@@ -10,6 +10,7 @@ import { CROP_LIST } from "@/lib/types";
 import type { DiseaseDetectionResult } from "@/lib/types";
 import { Microscope, Upload, Loader2, AlertCircle, ShieldCheck, Pill, Shield } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { NearbyAgroStores } from "@/components/NearbyAgroStores";
 
 export default function DiseaseDetectPage() {
   const { t, language } = useTranslation();
@@ -370,6 +371,11 @@ export default function DiseaseDetectPage() {
                 </ul>
               </CardContent>
             </Card>
+
+            {/* Display Nearby Agro Stores if severe enough to need treatment */}
+            {result.severity !== "Healthy" && (
+              <NearbyAgroStores treatmentKeywords={result.remedies || []} />
+            )}
           </div>
         )}
       </div>
