@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateSmartSms } from "@/lib/ai-engine";
+import { generateDetailedAlert } from "@/lib/ai-engine";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { cropType, region, season, riskLevel, riskPercentage, humidity, temperature, rainfall } = body;
+    const { cropType, region, season } = body;
     const lang = req.headers.get("x-language") || "en";
 
     if (!cropType || !region || !season) {
@@ -14,23 +14,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const message = await generateSmartSms({
+    const { rich, compact } = await generateDetailedAlert({
       cropType,
       region,
       season,
       language: lang,
-      riskLevel,
-      riskPercentage,
-      humidity,
-      temperature,
-      rainfall,
     });
 
-    return NextResponse.json({ message });
+    return NextResponse.json({ rich, compact });
   } catch (error: any) {
-    console.error("[GenerateSmartSms API Error]", error);
+    console.error("[GenerateComprehensive AI Alert API Error]", error);
     return NextResponse.json(
-      { error: "Failed to generate smart alert" },
+      { error: "Failed to generate comprehensive alert" },
       { status: 500 }
     );
   }

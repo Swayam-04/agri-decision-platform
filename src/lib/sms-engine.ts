@@ -75,17 +75,17 @@ async function sendViaTwilio(phone: string, message: string, config: SmsGatewayC
   const fromPhone = process.env.TWILIO_PHONE_NUMBER;
 
   if (!accountSid || !authToken || !fromPhone) {
-    return { 
-      success: false, 
-      errorCode: "AUTH_MISSING", 
-      errorMessage: "Twilio credentials (SID, Token, or Phone) not configured." 
+    return {
+      success: false,
+      errorCode: "AUTH_MISSING",
+      errorMessage: "Twilio credentials (SID, Token, or Phone) not configured."
     };
   }
 
   try {
     const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
     const auth = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
-    
+
     const params = new URLSearchParams();
     params.append("To", phone);
     params.append("From", fromPhone);
@@ -101,14 +101,16 @@ async function sendViaTwilio(phone: string, message: string, config: SmsGatewayC
     });
 
     const data = await response.json();
+    console.log("[Twilio API Response]", data);
 
     if (response.ok) {
       return { success: true, messageId: data.sid };
     } else {
-      return { 
-        success: false, 
-        errorCode: data.code?.toString() || "TWILIO_ERROR", 
-        errorMessage: data.message || "Twilio API error" 
+      console.error("[Twilio Error]", data);
+      return {
+        success: false,
+        errorCode: data.code?.toString() || "TWILIO_ERROR",
+        errorMessage: data.message || "Twilio API error"
       };
     }
   } catch (err) {
@@ -128,7 +130,7 @@ async function sendViaFast2Sms(phone: string, message: string, config: SmsGatewa
     // Fast2SMS BulkV2 Quick SMS API
     // Using simple phone normalization for Fast2SMS (remove +91 prefix)
     const cleanPhone = phone.replace("+91", "");
-    
+
     const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
       method: "POST",
       headers: {
@@ -149,10 +151,10 @@ async function sendViaFast2Sms(phone: string, message: string, config: SmsGatewa
     if (data.return) {
       return { success: true, messageId: data.request_id };
     } else {
-      return { 
-        success: false, 
-        errorCode: "FAST2SMS_ERROR", 
-        errorMessage: typeof data.message === 'string' ? data.message : JSON.stringify(data.message) || "Failed to send SMS via Fast2SMS" 
+      return {
+        success: false,
+        errorCode: "FAST2SMS_ERROR",
+        errorMessage: typeof data.message === 'string' ? data.message : JSON.stringify(data.message) || "Failed to send SMS via Fast2SMS"
       };
     }
   } catch (err) {
@@ -197,8 +199,8 @@ export async function sendSms(phone: string, message: string, config?: SmsGatewa
   const gwConfig: SmsGatewayConfig = config || getDefaultGatewayConfig();
 
   // Validate message length
-  if (message.length > 160) {
-    return { success: false, errorCode: "MSG_TOO_LONG", errorMessage: `Message exceeds 160 chars (${message.length} chars). Truncate or split.` };
+  if (message.length > 500) {
+    return { success: false, errorCode: "MSG_TOO_LONG", errorMessage: `Message exceeds 500 chars (${message.length} chars). Truncate or split.` };
   }
 
   switch (gwConfig.provider) {
@@ -217,7 +219,7 @@ export async function sendSms(phone: string, message: string, config?: SmsGatewa
 // ─── Gateway Configuration ───
 
 let currentGatewayConfig: SmsGatewayConfig = {
-  provider: "mock",
+  provider: "twilio",
   senderId: "CROPAI",
 };
 
@@ -351,7 +353,7 @@ export async function sendSmsAlert(request: SmsSendRequest): Promise<SmsSendResp
   }
 
   // 2. Validate message length
-  if (request.message.length > 160) {
+  if (request.message.length > 500) {
     const failedEntry: SmsLogEntry = {
       id: generateId(),
       timestamp: new Date().toISOString(),
@@ -363,14 +365,14 @@ export async function sendSmsAlert(request: SmsSendRequest): Promise<SmsSendResp
       retryCount: 0,
       maxRetries: 0,
       gatewayProvider: request.gateway || getDefaultGatewayConfig().provider,
-      errorMessage: `Message too long: ${request.message.length}/160 chars`,
+      errorMessage: `Message too long: ${request.message.length}/500 chars`,
       failedAt: new Date().toISOString(),
       cropType: request.cropType || "Unknown",
       region: request.region || "Unknown",
       season: request.season || "Unknown",
     };
     alertHistory.push(failedEntry);
-    return { success: false, logEntry: failedEntry, validationErrors: [`Message exceeds 160 characters (${request.message.length})`] };
+    return { success: false, logEntry: failedEntry, validationErrors: [`Message exceeds 500 characters (${request.message.length})`] };
   }
 
   // 3. Create log entry
@@ -509,8 +511,8 @@ function evaluateThresholds(input: SmsTriggerInput): ThresholdCheck[] {
 }
 
 function truncateMsg(msg: string): string {
-  if (msg.length <= 160) return msg;
-  return msg.slice(0, 157) + "...";
+  if (msg.length <= 500) return msg;
+  return msg.slice(0, 497) + "...";
 }
 
 export async function triggerEventAlerts(input: SmsTriggerInput): Promise<SmsTriggerResult> {

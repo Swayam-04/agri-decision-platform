@@ -27,6 +27,11 @@ import type {
 import { CROP_LIST, REGION_LIST, SEASON_LIST } from "./types";
 
 // Seeded randomness for reproducibility given inputs
+const trunc = (str: string, max = 160): string =>
+  str.length > max ? str.substring(0, max - 3) + "..." : str;
+
+const jitter = () => 0.9 + Math.random() * 0.2;
+
 function hash(str: string): number {
   let h = 0;
   for (let i = 0; i < str.length; i++) {
@@ -406,7 +411,7 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'Moderate': return 'मध्यम';
       case 'High': return 'उच्च';
       case 'sms_smart_disease': return `🌾 अलर्ट: ${vars.region} में ${vars.crop} के लिए ${vars.riskLevel} ${vars.disease} जोखिम (${vars.risk}%)। 48 घंटों में स्प्रे करें। - क्रॉपइंटेल एआई`;
-      case 'sms_smart_pest': return `🌾 अलर्ट: ${vars.region} में ${vars.crop} के लिए ${vars.pest} का खतरा। तत्काल नीम स्प्रे की सलाह। - क्रॉपइंटेल एआई`;
+      case 'sms_smart_pest': return `🐛 ${vars.region} में ${vars.crop} के लिए ${vars.pest} का उच्च खतरा। वर्तमान आर्द्रता और वर्षा के कारण। तत्काल कीट नियंत्रण उपाय करें।`;
       case 'sms_smart_weather': return `🌾 अलर्ट: ${vars.region} (${vars.season}): ${vars.insight} - क्रॉपइंटेल एआई`;
       default: return templateId;
     }
@@ -704,7 +709,7 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'Moderate': return 'ମଧ୍ୟମ';
       case 'High': return 'ଉଚ୍ଚ';
       case 'sms_smart_disease': return `🌾 ଆଲର୍ଟ: ${vars.region} (${vars.crop}): ${vars.riskLevel} ${vars.disease} ଆଶଙ୍କା (${vars.risk}%) | ୪୮ ଘଣ୍ଟା ମଧ୍ୟରେ ସ୍ପ୍ରେ କରନ୍ତୁ | - କ୍ରପ୍ ଇଣ୍ଟେଲ୍ AI`;
-      case 'sms_smart_pest': return `🌾 ଆଲର୍ଟ: ${vars.region} (${vars.crop}): ${vars.pest} ବିପଦ | ତୁରନ୍ତ ନିମ୍ ସ୍ପ୍ରେ ପାଇଁ ପରାମର୍ଶ | - କ୍ରପ୍ ଇଣ୍ଟେଲ୍ AI`;
+      case 'sms_smart_pest': return `🐛 ${vars.region} ରେ ${vars.crop} ପାଇଁ ${vars.pest} ର ଉଚ୍ଚ ବିପଦ | ବର୍ତ୍ତମାନର ଆର୍ଦ୍ରତା ଏବଂ ବର୍ଷା ହେତୁ | ତୁରନ୍ତ କୀଟ ନିୟନ୍ତ୍ରଣ ପଦକ୍ଷେପ ନିଅନ୍ତୁ |`;
       case 'sms_smart_weather': return `🌾 ଆଲର୍ଟ: ${vars.region} (${vars.season}): ${vars.insight} - କ୍ରପ୍ ଇଣ୍ଟେଲ୍ AI`;
       default: return templateId;
     }
@@ -742,7 +747,7 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
     case 'chat_advisory': return `Crop advisory for ${vars.region} during ${vars.season}: Safe crops: ${vars.safe}. Avoid: ${vars.avoid}.`;
     case 'chat_default': return `I understand you're asking about "${vars.input}". Here's what I can help with for ${vars.crop} in ${vars.region}:\n\n1. Disease info\n2. Profit estimates\n3. Market advice\n4. Irrigation guidance\n\nTry asking a specific question!`;
     case 'sms_smart_disease': return `🌾 Alert: ${vars.riskLevel} ${vars.disease} risk (${vars.risk}%) in ${vars.region} for ${vars.crop}. Spray within 48h. - CropIntel AI`;
-    case 'sms_smart_pest': return `🌾 Alert: High ${vars.pest} risk in ${vars.region} for ${vars.crop}. Immediate control recommended. - CropIntel AI`;
+    case 'sms_smart_pest': return `🐛 High ${vars.pest} risk for ${vars.crop} in ${vars.region}. Due to current humidity and rainfall. Apply pest control measures immediately.`;
     case 'sms_smart_weather': return `🌾 Alert: ${vars.region} (${vars.season}): ${vars.insight} - CropIntel AI`;
     default: return templateId;
   }
@@ -1576,14 +1581,24 @@ export function simulatePestOutbreak(input: PestOutbreakInput): PestOutbreakResu
 
   // Calculate outbreak probability based on weather
   let baseRisk = 20;
-  if (input.humidity > 75) baseRisk += (input.humidity - 75) * 1.5;
-  if (input.temperature > 30) baseRisk += (input.temperature - 30) * 2;
-  if (input.recentRainfall > 25) baseRisk += input.recentRainfall * 0.5;
-  baseRisk += seededRandom(seed, 1) * 15;
-  const outbreakProbability = Math.min(Math.max(Math.round(baseRisk), 5), 95);
+  let riskZone: PestOutbreakResult["riskZone"] = "Low";
+  let outbreakProbability = 15;
+  const reasoning: string[] = [];
 
-  const riskZone: PestOutbreakResult["riskZone"] =
-    outbreakProbability < 35 ? "Low" : outbreakProbability < 65 ? "Moderate" : "High";
+  if (input.humidity > 75 && input.recentRainfall > 15) {
+    riskZone = "High";
+    outbreakProbability = Math.min(Math.max(Math.round(40 + (input.humidity - 75) * 1.5 + input.recentRainfall * 0.5), 75), 95);
+    reasoning.push(lang === 'hi' ? `उच्च आर्द्रता (${input.humidity}%)` : lang === 'or' ? `ଉଚ୍ଚ ଆର୍ଦ୍ରତା (${input.humidity}%)` : `High humidity (${input.humidity}%)`);
+    reasoning.push(lang === 'hi' ? `मध्यम वर्षा (${input.recentRainfall}mm)` : lang === 'or' ? `ମଧ୍ୟମ ବର୍ଷା (${input.recentRainfall}mm)` : `Moderate rainfall (${input.recentRainfall}mm)`);
+  } else if (input.humidity > 60) {
+    riskZone = "Moderate";
+    outbreakProbability = Math.min(Math.max(Math.round(20 + (input.humidity - 60) * 1.5), 40), 70);
+    reasoning.push(lang === 'hi' ? `बढ़ी हुई आर्द्रता (${input.humidity}%)` : lang === 'or' ? `ବର୍ଦ୍ଧିତ ଆର୍ଦ୍ରତା (${input.humidity}%)` : `Increased humidity (${input.humidity}%)`);
+  } else {
+    riskZone = "Low";
+    outbreakProbability = Math.min(Math.max(Math.round(5 + input.humidity * 0.2), 5), 30);
+    reasoning.push(lang === 'hi' ? `स्थितियां स्थिर हैं` : lang === 'or' ? `ସ୍ଥିତି ସ୍ଥିର ଅଛି` : `Conditions are stable`);
+  }
 
   // Affected crops based on pest suitability
   const affectedCrops = pests
@@ -1678,7 +1693,20 @@ export function simulatePestOutbreak(input: PestOutbreakInput): PestOutbreakResu
       : `Current pest pressure in ${input.region} is below historical averages. Normal precautions are sufficient.`;
   }
 
-  return { outbreakProbability, riskZone, affectedCrops, districtAlerts, preventiveAdvisory, historicalComparison };
+  return { 
+    outbreakProbability, 
+    riskZone, 
+    affectedCrops, 
+    districtAlerts, 
+    preventiveAdvisory, 
+    historicalComparison,
+    weatherData: {
+      temp: input.temperature,
+      humidity: input.humidity,
+      rainfall: input.recentRainfall
+    },
+    reasoning 
+  };
 }
 
 // ─── SMS Alert System ───
@@ -1996,16 +2024,68 @@ export async function generateSmartSms(input: {
   region: string;
   season: string;
   language?: string;
+  // Live weather inputs (optional - falls back to simulation if not provided)
+  riskLevel?: "Low" | "Medium" | "High";
+  riskPercentage?: number;
+  humidity?: number;
+  temperature?: number;
+  rainfall?: number;
 }): Promise<string> {
-  const { cropType, region, season, language: lang } = input;
+  const {
+    cropType, region, season,
+    language: lang = "en",
+    riskLevel: providedRiskLevel,
+    riskPercentage: providedRiskPct,
+    humidity: h,
+    temperature: t,
+    rainfall: r,
+  } = input;
 
-  // 1. Add Randomization (Jitter) to simulation inputs
-  const jitter = () => 0.9 + Math.random() * 0.2; // 0.9 to 1.1
 
-  // Gather all potential alerts
+  // ─── Smart Weather-Aware Message Engine ───
+  // If live weather data is provided, use it directly for precise generation.
+  if (providedRiskLevel && h !== undefined && t !== undefined && r !== undefined) {
+    const crop = cropType;
+    const reg = region;
+    const humidity = Math.round(h);
+    const temp = Math.round(t);
+    const rain = Math.round(r);
+
+    // Build dynamic reason phrases based on conditions
+    const reasons: string[] = [];
+    if (humidity > 80) reasons.push("high humidity");
+    if (rain > 20)    reasons.push("heavy rainfall");
+    if (temp > 40)    reasons.push("heat stress");
+
+    // Build dynamic action phrases based on conditions
+    const actions: string[] = [];
+    if (humidity > 80 || rain > 20) actions.push("apply fungicide");
+    if (rain > 20)                  actions.push("ensure drainage");
+    if (temp > 40)                  actions.push("irrigate early morning");
+    if (actions.length === 0)       actions.push("monitor daily");
+
+    const reasonStr  = reasons.length > 0 ? `${reasons.join(" & ")} detected. ` : "";
+    const actionStr  = actions.slice(0, 2).join(" & ");
+
+    let message: string;
+
+    if (providedRiskLevel === "High") {
+      const pct = providedRiskPct ? ` (${providedRiskPct}%)` : "";
+      message = `⚠️ HIGH risk${pct} for ${crop} in ${reg}. ${reasonStr}Act now: ${actionStr}. - CropIntel AI`;
+    } else if (providedRiskLevel === "Medium") {
+      message = `⚠️ Moderate risk for ${crop} in ${reg}. ${reasonStr}Prepare: ${actionStr}. - CropIntel AI`;
+    } else {
+      // Low
+      message = `✅ Low disease risk for ${crop} in ${reg}. Conditions stable. ${humidity}% humidity, ${temp}°C. Continue regular monitoring. - CropIntel AI`;
+    }
+
+    return trunc(message);
+  }
+
+  // ─── Fallback: Simulation-based generation (existing logic) ───
+
   const potentialAlerts: { type: string; data: any }[] = [];
 
-  // Disease Risk
   const diseaseRisk = simulateDiseaseRisk({
     cropType, region, season, language: lang,
     temperature: 28 * jitter(),
@@ -2016,7 +2096,6 @@ export async function generateSmartSms(input: {
     potentialAlerts.push({ type: 'disease', data: diseaseRisk });
   }
 
-  // Pest Outbreak
   const pestRisk = simulatePestOutbreak({
     region, season,
     temperature: 32 * jitter(),
@@ -2028,17 +2107,12 @@ export async function generateSmartSms(input: {
     potentialAlerts.push({ type: 'pest', data: pestRisk });
   }
 
-  // Advisory (Always a fallback)
   const advisory = simulateRiskAdvisory({ region, season, language: lang });
 
-  // 2. Smart Rotation: Pick a random alert from potential or fallback to weather
   let finalMessage = "";
-  const selected = potentialAlerts.length > 0 
+  const selected = potentialAlerts.length > 0
     ? potentialAlerts[Math.floor(Math.random() * potentialAlerts.length)]
     : { type: 'weather', data: advisory };
-
-  // Helper to truncate tokens
-  const trunc = (str: string, max: number) => str.length > max ? str.substring(0, max - 3) + "..." : str;
 
   if (selected.type === 'disease') {
     const risk = selected.data;
@@ -2059,9 +2133,7 @@ export async function generateSmartSms(input: {
       pest: tLocale(lang, pestName, {})
     });
   } else {
-    // Weather/Advisory fallback
     const adv = selected.data;
-    // Truncate insight to ensure it fits in 160 chars
     const shortInsight = trunc(adv.seasonalInsight, 90);
     finalMessage = tLocale(lang, 'sms_smart_weather', {
       region: tLocale(lang, region, {}),
@@ -2070,6 +2142,126 @@ export async function generateSmartSms(input: {
     });
   }
 
-  // 3. Final safety truncation
-  return trunc(finalMessage, 158); 
+  return trunc(finalMessage);
+}
+
+/**
+ * Automatically generates a context-aware SMS alert based on the active module.
+ * No manual input - uses system data / simulations.
+ */
+export async function generateModuleAlert(input: {
+  activeModule: string;
+  cropType: string;
+  region: string;
+  season: string;
+  language?: string;
+}): Promise<string> {
+  const { activeModule, cropType, region, season, language: lang = "en" } = input;
+
+  let message = "";
+
+  switch (activeModule) {
+    case "Disease Detection": {
+      const result = simulateDiseaseDetection(cropType, lang);
+      const disease = result.diseaseName;
+      if (result.severity === "Healthy") {
+        message = `✅ No disease detected in ${cropType}. Crop appears healthy. Continue regular monitoring. - CropIntel AI`;
+      } else {
+        message = `⚠️ ${disease} detected in ${cropType}. Take immediate treatment to prevent spread. - CropIntel AI`;
+      }
+      break;
+    }
+
+    case "Disease Risk": {
+      const result = simulateDiseaseRisk({
+        cropType, region, season, language: lang,
+        temperature: 28 * jitter(),
+        humidity: 82 * jitter(),
+        rainfall: 15 * jitter()
+      });
+      message = `🌦️ Alert: ${result.riskLevel} disease risk for ${cropType} in ${region}. Weather conditions favor infection. Take precautions. - CropIntel AI`;
+      break;
+    }
+
+    case "Pest Outbreak": {
+      const result = simulatePestOutbreak({
+        region, season,
+        temperature: 32 * jitter(),
+        humidity: 70 * jitter(),
+        recentRainfall: 5 * jitter(),
+        language: lang
+      });
+      const topPest = result.affectedCrops.find(c => c.crop === cropType)?.pest || "Pests";
+      message = `🐛 Pest alert for ${cropType} in ${region}. Risk of ${topPest}. Apply pest control measures. - CropIntel AI`;
+      break;
+    }
+
+    case "Profit Prediction": {
+      const result = simulateProfitPrediction({ cropType, region, season, soilType: "Alluvial", irrigationType: "Drip", acreage: 1, language: lang });
+      const trend = result.profitPerAcre > 15000 ? "High" : "Good";
+      message = `💰 ${cropType} shows ${trend} profit potential in ${region}. Consider cultivation for better returns. - CropIntel AI`;
+      break;
+    }
+
+    case "Sell / Store": {
+      const result = simulatePriceForecast({ cropType, region, quantityQuintals: 50, currentPrice: 2200, storageCostPerDay: 1, language: lang });
+      const action = result.decision === "Store" ? "Store for profit OR sell based on need" : "Sell now to avoid losses";
+      message = `📈 ${cropType} prices are ${result.priceTrend}. ${action}. - CropIntel AI`;
+      break;
+    }
+
+    case "Crop Advisory": {
+      const result = simulateRiskAdvisory({ region, season, language: lang });
+      const shouldAvoid = result.cropsToAvoid.some(c => c.cropName === cropType);
+      if (shouldAvoid) {
+        message = `⚠️ Avoid growing ${cropType} in ${region}. Low profit or high risk expected during ${season}. - CropIntel AI`;
+      } else {
+        message = `✅ ${cropType} is well-suited for ${region} in ${season}. Expected stable returns. - CropIntel AI`;
+      }
+      break;
+    }
+
+    default:
+      message = `🌾 Update from CropIntel AI: Monitor your ${cropType} crops in ${region} for optimal growth this ${season}.`;
+  }
+
+  return trunc(message);
+}
+
+/**
+ * Generates a comprehensive, multi-point farmer alert based on all system predictions.
+ * Returns both a rich multi-line format and a compact SMS format.
+ */
+export async function generateDetailedAlert(input: {
+  cropType: string;
+  region: string;
+  season: string;
+  language?: string;
+}): Promise<{ rich: string; compact: string }> {
+  const { cropType, region, season, language: lang = "en" } = input;
+
+  // 1. Fetch data from all modules (Simulated)
+  const riskRes = simulateDiseaseRisk({ cropType, region, season, temperature: 28 * jitter(), humidity: 82 * jitter(), rainfall: 15 * jitter(), language: lang });
+  const pestRes = simulatePestOutbreak({ region, season, temperature: 31 * jitter(), humidity: 75 * jitter(), recentRainfall: 10 * jitter(), language: lang });
+  const profitRes = simulateProfitPrediction({ cropType, region, season, acreage: 1, soilType: "Alluvial", irrigationType: "Drip", language: lang });
+  const priceRes = simulatePriceForecast({ cropType, region, quantityQuintals: 50, currentPrice: 2200, storageCostPerDay: 1, language: lang });
+  const advisoryRes = simulateRiskAdvisory({ region, season, language: lang });
+
+  const topPest = pestRes.affectedCrops.find(c => c.crop === cropType)?.pest || "Low risk";
+  const pTrend = priceRes.priceTrend;
+  const pAction = priceRes.decision === "Store" ? "Store" : "Sell";
+  const outlook = profitRes.profitPerAcre > 15000 ? "Good" : "Moderate";
+  const riskReason = riskRes.factors.find(f => f.impact === "Negative")?.detail || "Weather conditions";
+
+  // 2. Generate Rich Multi-line Message (Condensed for 160 chars)
+  const rich = `🌾 ${cropType} | ${region}\n⚠️ Risk: ${riskRes.riskLevel} (${riskReason})\n🐛 Pest: ${topPest}\n📈 Market: ${pTrend} (${pAction})\n💰 Profit: ₹${Math.round(profitRes.profitPerAcre / 1000)}k (${outlook})\n✅ Act: ${riskRes.recommendation.split('.')[0]}\n- CropIntel AI`;
+
+  // 3. Generate Compact SMS Version (160 chars)
+  const compact = `⚠️ ${cropType} ${region}: ${riskRes.riskLevel} (${riskRes.riskPercentage}%). 🐛 ${topPest}. 📈 ${pTrend}→${pAction}. 💰 ₹${Math.round(profitRes.profitPerAcre / 1000)}k (${outlook}). Act: ${riskRes.recommendation.split('.')[0]}. - AI`;
+
+  // Final truncation check for SMS safety (Strict 160 limit)
+  const finalRich = trunc(rich, 160);
+  const finalCompact = trunc(compact, 160);
+
+  return { rich: finalRich, compact: finalCompact };
 }

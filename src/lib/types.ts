@@ -173,6 +173,12 @@ export interface PestOutbreakResult {
   districtAlerts: { district: string; level: "Low" | "Moderate" | "High" | string; pest: string }[];
   preventiveAdvisory: string[];
   historicalComparison: string;
+  weatherData?: {
+    temp: number;
+    humidity: number;
+    rainfall: number;
+  };
+  reasoning?: string[];
 }
 
 // ─── SMS Alert ───

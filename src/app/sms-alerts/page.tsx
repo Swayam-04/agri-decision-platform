@@ -11,12 +11,12 @@ import {
   MessageSquare, Loader2, Phone, AlertTriangle, CheckCircle2, Send,
   Zap, RefreshCw, XCircle, Clock, BarChart3, Shield, Activity,
   FileText, Download, Calendar, Filter, FileSpreadsheet, Droplets, TrendingUp,
-  Globe, Sprout, CloudSun
+  Globe, Sprout, CloudSun, Users, CheckSquare
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { CROP_LIST, REGION_LIST, SEASON_LIST } from "@/lib/types";
 
-type ActiveTab = "reports" | "send" | "history";
+type ActiveTab = "reports" | "send" | "history" | "farmers";
 
 export default function SmsAlertsPage() {
   const { t, language } = useTranslation();
@@ -41,10 +41,28 @@ export default function SmsAlertsPage() {
   const [sendPhone, setSendPhone] = useState("+919876543210");
   const [sendMessage, setSendMessage] = useState("");
   const [sendPriority, setSendPriority] = useState<"Normal" | "High" | "Critical">("Normal");
-  const [sendGateway, setSendGateway] = useState<string>("mock");
+  const [sendGateway, setSendGateway] = useState<string>("twilio");
   const [sendCrop, setSendCrop] = useState<string>("Rice");
   const [sendRegion, setSendRegion] = useState<string>("Punjab");
   const [sendSeason, setSendSeason] = useState<string>("Kharif");
+  const [useBroadcast, setUseBroadcast] = useState(false);
+  const [messageMode, setMessageMode] = useState<"rich" | "compact">("compact");
+
+  // Comprehensive AI Insight states
+  const [richMessage, setRichMessage] = useState("");
+  const [compactSms, setCompactSms] = useState("");
+
+  // Auto-detection state for module-based alerts
+  const [activeModule, setActiveModule] = useState<string>("Disease Risk");
+
+  // Farmer Reg State
+  const [regName, setRegName] = useState("");
+  const [regPhone, setRegPhone] = useState("+91");
+  const [regRegion, setRegRegion] = useState("Odisha");
+  const [regCrop, setRegCrop] = useState("Rice");
+  const [regConsent, setRegConsent] = useState(false);
+  const [farmersList, setFarmersList] = useState<any[]>([]);
+  const [regStatus, setRegStatus] = useState<{success: boolean, message: string} | null>(null);
 
   // Results & Loading
   const [sendResult, setSendResult] = useState<{ success: boolean; logEntry: SmsLogEntry; validationErrors?: string[] } | null>(null);
@@ -58,11 +76,34 @@ export default function SmsAlertsPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
 
-  // ─── Generate Smart SMS ───
-  async function handleGenerateSmartAlert() {
+  // ─── Generate Module-Based SMS (Auto) ───
+  async function handleGenerateModuleAlert(moduleName?: string) {
+    const targetModule = moduleName || activeModule;
     setGenerating(true);
     try {
-      const res = await fetch("/api/sms-alerts/generate-smart", {
+      const res = await fetch("/api/sms-alerts/generate-module", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-language": language },
+        body: JSON.stringify({
+          activeModule: targetModule,
+          cropType: sendCrop,
+          region: sendRegion,
+          season: sendSeason,
+        }),
+      });
+      const data = await res.json();
+      if (data.message) {
+        setSendMessage(data.message);
+      }
+    } catch (err) { console.error(err); }
+    finally { setGenerating(false); }
+  }
+
+  // ─── Generate Comprehensive AI Alert ───
+  async function handleGenerateComprehensiveAlert() {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/sms-alerts/generate-comprehensive", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({
@@ -72,8 +113,15 @@ export default function SmsAlertsPage() {
         }),
       });
       const data = await res.json();
-      if (data.message) {
-        setSendMessage(data.message);
+      if (data.rich && data.compact) {
+        setRichMessage(data.rich);
+        setCompactSms(data.compact);
+        // Automatically sync compact to message field if in compact mode
+        if (messageMode === "compact") {
+          setSendMessage(data.compact);
+        } else {
+          setSendMessage(data.rich);
+        }
       }
     } catch (err) { console.error(err); }
     finally { setGenerating(false); }
@@ -95,9 +143,15 @@ export default function SmsAlertsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({
-          phone: sendPhone, message: sendMessage, priority: sendPriority,
+          phone: useBroadcast ? "BROADCAST" : sendPhone, 
+          message: sendMessage, 
+          priority: sendPriority,
           gateway: sendGateway,
-          triggerEvent: "Manual",
+          triggerEvent: useBroadcast ? "Database Broadcast" : "Manual",
+          useBroadcast,
+          cropType: sendCrop,
+          region: sendRegion,
+          season: sendSeason,
         }),
       });
       setSendResult(await res.json());
@@ -131,9 +185,57 @@ export default function SmsAlertsPage() {
     finally { setLoading(false); }
   }
 
-  const tabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
+  // ─── Farmers Logic ───
+  async function fetchFarmers() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/farmers");
+      const data = await res.json();
+      setFarmersList(data.farmers || []);
+    } catch(err) { console.error(err); }
+    finally { setLoading(false); }
+  }
+
+  async function handleRegisterFarmer() {
+    setLoading(true);
+    setRegStatus(null);
+    try {
+      const res = await fetch("/api/farmers/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: regName, phone: regPhone, region: regRegion, crop: regCrop, consent: regConsent })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRegStatus({ success: true, message: "Farmer successfully registered!" });
+        setRegName(""); setRegPhone("+91"); setRegConsent(false);
+        fetchFarmers();
+      } else {
+        setRegStatus({ success: false, message: data.error || "Registration failed." });
+      }
+    } catch(err) {
+      setRegStatus({ success: false, message: "Network error occurred." });
+    } finally { setLoading(false); }
+  }
+
+  async function handleUnsubscribeFarmer(phone: string) {
+    if(!confirm("Are you sure you want to revoke consent for this farmer?")) return;
+    setLoading(true);
+    try {
+      await fetch("/api/farmers/unsubscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone })
+      });
+      fetchFarmers();
+    } catch(err) {}
+    finally { setLoading(false); }
+  }
+
+  const tabs: { id: ActiveTab; label: string; icon: React.ReactNode; defaultAction?: () => void }[] = [
     { id: "reports", label: t("reports.tabReports"), icon: <FileText className="h-4 w-4" /> },
     { id: "send", label: t("sms.tabManual"), icon: <Send className="h-4 w-4" /> },
+    { id: "farmers", label: "Farmers", icon: <Users className="h-4 w-4" />, defaultAction: fetchFarmers },
     { id: "history", label: t("sms.tabHistory"), icon: <Clock className="h-4 w-4" /> },
   ];
 
@@ -154,7 +256,10 @@ export default function SmsAlertsPage() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                if (tab.defaultAction) tab.defaultAction();
+              }}
               className={`relative flex items-center gap-3 px-8 py-3.5 text-sm font-black rounded-xl transition-all duration-500 overflow-hidden ${
                 activeTab === tab.id
                   ? "bg-white dark:bg-[#16a34a] text-[#16a34a] dark:text-white shadow-[0_10px_20px_rgba(22,163,74,0.2)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.3)] scale-[1.03] z-10"
@@ -283,11 +388,19 @@ export default function SmsAlertsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 opacity-50">
                   <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase">{t("sms.phoneCountry")}</label>
-                  <Input value={sendPhone} onChange={(e) => setSendPhone(e.target.value)} placeholder="+919876543210" className="rounded-xl border-[#16a34a]/20" />
+                  <Input value={useBroadcast ? "BROADCAST TO DB" : sendPhone} onChange={(e) => setSendPhone(e.target.value)} disabled={useBroadcast} placeholder="+919876543210" className="rounded-xl border-[#16a34a]/20 font-mono" />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 flex flex-col justify-end pb-1.5">
+                  <div className="flex items-center gap-2 cursor-pointer" onClick={() => setUseBroadcast(!useBroadcast)}>
+                    <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${useBroadcast ? "bg-[#16a34a] border-[#16a34a]" : "border-[#16a34a]/40"}`}>
+                      {useBroadcast && <CheckSquare className="h-4 w-4 text-white" />}
+                    </div>
+                    <span className="text-sm font-bold text-[#3d1f0a] dark:text-[#f0fdf4]">Broadcast to Match (Crop+Region)</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5 hidden">
                   <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase">{t("sms.priority")}</label>
                   <Select value={sendPriority} onValueChange={(v) => setSendPriority(v as "Normal" | "High" | "Critical")}>
                     <SelectTrigger className="rounded-xl border-[#16a34a]/20"><SelectValue /></SelectTrigger>
@@ -334,20 +447,91 @@ export default function SmsAlertsPage() {
                   </Select>
                 </div>
               </div>
+
+              {/* ─── Module-Aware AI Message Generator (Auto) ─── */}
+              <div className="p-4 rounded-2xl border border-[#16a34a]/20 bg-[#16a34a]/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black uppercase text-[#6b4423]/60 dark:text-[#86efac]/60 tracking-wider flex items-center gap-1.5">
+                    <Zap className="h-3 w-3 text-[#16a34a]" /> AI Generator (Module Context)
+                  </p>
+                  <Badge variant="outline" className="text-[9px] border-[#16a34a]/20 text-[#16a34a] bg-white">Auto-Detection ON</Badge>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase text-[#6b4423]/50">Currently Active Feature</label>
+                    <Select value={activeModule} onValueChange={(v) => {
+                      setActiveModule(v);
+                      handleGenerateModuleAlert(v);
+                    }}>
+                      <SelectTrigger className="h-10 rounded-xl border-[#16a34a]/20 bg-white dark:bg-black/20">
+                        <SelectValue placeholder="Select Module" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Disease Detection">🌿 Disease Detection</SelectItem>
+                        <SelectItem value="Disease Risk">🌦️ Disease Risk</SelectItem>
+                        <SelectItem value="Pest Outbreak">🐛 Pest Outbreak</SelectItem>
+                        <SelectItem value="Profit Prediction">💰 Profit Prediction</SelectItem>
+                        <SelectItem value="Sell / Store">📈 Sell / Store</SelectItem>
+                        <SelectItem value="Crop Advisory">⚠️ Crop Advisory</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleGenerateModuleAlert()}
+                    disabled={generating}
+                    className="h-10 rounded-xl border-[#16a34a]/30 text-[#16a34a] hover:bg-[#16a34a]/10 font-bold text-xs"
+                  >
+                    {generating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                    Auto-Refetch Data
+                  </Button>
+                </div>
+                <p className="text-[9px] text-[#6b4423]/40 italic">System is pulling the latest AI predictions for the selected module above.</p>
+              </div>
+
+              {/* ─── Comprehensive Multi-Insight AI Alert (New) ─── */}
+              <div className="p-4 rounded-2xl border border-blue-200 bg-blue-50/50 dark:bg-blue-900/10 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-blue-600 tracking-wider flex items-center gap-1.5">
+                      <BarChart3 className="h-3 w-3" /> Comprehensive AI Insight
+                    </p>
+                    <p className="text-[9px] text-blue-500/80">Aggregates Risk, Pest, Market & Profit data</p>
+                  </div>
+                  <Button 
+                    onClick={handleGenerateComprehensiveAlert} 
+                    disabled={generating}
+                    size="sm"
+                    className="h-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] shadow-sm"
+                  >
+                    {generating ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Zap className="h-3 w-3 mr-1.5 fill-current" />}
+                    Sync All Data
+                  </Button>
+                </div>
+                
+                {(richMessage || compactSms) && (
+                  <div className="flex bg-white dark:bg-black/20 p-1 rounded-xl border border-blue-100/50">
+                    <button 
+                      onClick={() => { setMessageMode("compact"); setSendMessage(compactSms); }}
+                      className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${messageMode === "compact" ? "bg-blue-600 text-white shadow-sm" : "text-blue-600/60 hover:bg-blue-50"}`}
+                    >
+                      SMS Compact
+                    </button>
+                    <button 
+                      onClick={() => { setMessageMode("rich"); setSendMessage(richMessage); }}
+                      className={`flex-1 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${messageMode === "rich" ? "bg-blue-600 text-white shadow-sm" : "text-blue-600/60 hover:bg-blue-50"}`}
+                    >
+                      Rich Format
+                    </button>
+                  </div>
+                )}
+                <p className="text-[8px] text-blue-400 italic">Generate a multi-point alert covering all farming aspects for the current crop/region.</p>
+              </div>
+
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase">{t("sms.message")}</label>
-                    <Button 
-                      onClick={handleGenerateSmartAlert} 
-                      disabled={generating} 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-7 px-2 text-[10px] font-bold border-[#16a34a]/30 text-[#16a34a] hover:bg-[#16a34a]/10 rounded-lg flex items-center gap-1.5"
-                    >
-                      {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3 fill-current" />}
-                      Generate Smart Alert
-                    </Button>
                   </div>
                   <span className={`text-[10px] font-bold ${sendMessage.length > 160 ? "text-red-500" : "text-[#16a34a]"}`}>
                     {sendMessage.length}/160 {t("common.chars")}
@@ -357,7 +541,7 @@ export default function SmsAlertsPage() {
                   className="w-full min-h-[120px] rounded-2xl border border-[#16a34a]/20 bg-background/50 px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16a34a]/30 transition-all font-mono"
                   value={sendMessage}
                   onChange={(e) => setSendMessage(e.target.value)}
-                  maxLength={200}
+                  maxLength={160}
                 />
               </div>
               <Button onClick={handleSend} disabled={loading || !sendMessage.trim()} className="h-14 px-8 bg-[#16a34a] hover:bg-[#15803d] text-white rounded-xl font-bold shadow-lg shadow-[#16a34a]/20">
@@ -387,6 +571,128 @@ export default function SmsAlertsPage() {
               </CardContent>
             </Card>
           )}
+        </div>
+      )}
+
+      {/* ─── TAB: Farmers ─── */}
+      {activeTab === "farmers" && (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Registration Form */}
+            <Card className="h-fit sticky top-6 border-[#16a34a]/20 shadow-md">
+              <CardHeader className="bg-[#16a34a]/5 pb-4 border-b border-[#16a34a]/10">
+                <CardTitle className="text-md font-black dark:text-[#f0fdf4] flex items-center gap-2">
+                  <Users className="h-5 w-5 text-[#16a34a]" />
+                  Register Farmer
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                {regStatus && (
+                  <div className={`p-3 rounded-xl border text-sm font-bold ${regStatus.success ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200"}`}>
+                    {regStatus.message}
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-[#6b4423]/60 dark:text-[#86efac]/60 tracking-wider">Full Name</label>
+                  <Input value={regName} onChange={(e) => setRegName(e.target.value)} placeholder="E.g., Ramesh Kumar" className="rounded-xl border-[#16a34a]/20" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase text-[#6b4423]/60 dark:text-[#86efac]/60 tracking-wider">Phone Number</label>
+                  <Input value={regPhone} onChange={(e) => setRegPhone(e.target.value)} placeholder="+919876543210" className="rounded-xl border-[#16a34a]/20" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-[#6b4423]/60 dark:text-[#86efac]/60 tracking-wider">Primary Crop</label>
+                    <Select value={regCrop} onValueChange={setRegCrop}>
+                      <SelectTrigger className="rounded-xl border-[#16a34a]/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>{CROP_LIST.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-[#6b4423]/60 dark:text-[#86efac]/60 tracking-wider">Region</label>
+                    <Select value={regRegion} onValueChange={setRegRegion}>
+                      <SelectTrigger className="rounded-xl border-[#16a34a]/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>{REGION_LIST.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <label 
+                    className="flex items-start gap-3 p-3 border border-[#16a34a]/30 rounded-xl bg-white dark:bg-black/20 cursor-pointer hover:bg-[#16a34a]/5 transition-colors"
+                    onClick={() => setRegConsent(!regConsent)}
+                  >
+                     <div className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${regConsent ? "bg-[#16a34a] border-[#16a34a]" : "border-[#16a34a]/40"}`}>
+                        {regConsent && <CheckSquare className="h-4 w-4 text-white" />}
+                     </div>
+                     <span className="text-xs font-bold text-[#3d1f0a] dark:text-[#f0fdf4] leading-tight">
+                        I agree to receive targeted SMS alerts regarding weather risks and AI crop insights.
+                     </span>
+                  </label>
+                </div>
+
+                <Button 
+                  onClick={handleRegisterFarmer} 
+                  disabled={loading || !regName || !regPhone} 
+                  className="w-full mt-2 bg-[#16a34a] hover:bg-[#15803d] text-white py-6 rounded-xl font-bold transition-all hover:scale-[1.02] shadow-lg shadow-[#16a34a]/20"
+                >
+                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Profile"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Farmer Directory */}
+            <div className="lg:col-span-2 space-y-4">
+               <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold text-[#3d1f0a] dark:text-[#f0fdf4] flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-[#16a34a]" />
+                    Verified Roster Directory
+                  </h3>
+                  <Button onClick={fetchFarmers} variant="outline" size="sm" className="h-8 border-[#16a34a]/20 text-[#16a34a] rounded-lg hover:bg-[#16a34a]/10">
+                     <RefreshCw className={`h-3 w-3 mr-2 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                  </Button>
+               </div>
+               
+               {farmersList.length === 0 ? (
+                  <div className="text-center py-20 bg-[#16a34a]/5 rounded-3xl border border-dashed border-[#16a34a]/20">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-[#16a34a]/40" />
+                    <p className="text-[#6b4423]/60 dark:text-[#86efac]/60 font-bold">No farmers registered yet.</p>
+                  </div>
+               ) : (
+                  <div className="grid gap-3">
+                     {farmersList.map(farmer => (
+                        <div key={farmer.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-[#0d1f10]/40 border border-[#16a34a]/10 rounded-2xl shadow-sm hover:shadow-md transition-shadow gap-4">
+                           <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                 <h4 className="font-black text-[#3d1f0a] dark:text-[#f0fdf4] text-lg">{farmer.name}</h4>
+                                 {farmer.verified && <CheckCircle2 className="h-4 w-4 text-[#16a34a]" />}
+                              </div>
+                              <p className="text-sm font-mono text-[#6b4423]/80 dark:text-[#86efac]/80">{farmer.phone}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                 <Badge className="px-2 py-0 text-[10px] bg-[#16a34a]/10 text-[#16a34a] border-[#16a34a]/20">{farmer.crop}</Badge>
+                                 <Badge className="px-2 py-0 text-[10px] bg-[#f59e0b]/10 text-[#d97706] border-[#f59e0b]/20">{farmer.region}</Badge>
+                              </div>
+                           </div>
+                           <div className="flex items-center gap-2">
+                              {farmer.consent ? (
+                                 <Button onClick={() => handleUnsubscribeFarmer(farmer.phone)} variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50 rounded-lg">
+                                    Revoke Consent
+                                 </Button>
+                              ) : (
+                                 <Badge className="bg-red-50 text-red-700 border-red-200 px-3 py-1.5 flex items-center gap-1.5">
+                                    <XCircle className="h-3 w-3" /> Opted Out
+                                 </Badge>
+                              )}
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               )}
+            </div>
+
+          </div>
         </div>
       )}
 
@@ -466,6 +772,16 @@ function AlertLogCard({
       <div className="bg-[#16a34a]/5 dark:bg-[#16a34a]/10 rounded-xl p-4 mb-4 border-l-4 border-[#16a34a]">
         <p className="text-sm font-bold text-[#3d1f0a] dark:text-[#f0fdf4] leading-relaxed">{entry.message}</p>
       </div>
+
+      {entry.errorMessage && (
+        <div className="bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/20 rounded-xl p-3 mb-4">
+          <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase mb-1">Error Reason</p>
+          <p className="text-xs font-bold text-red-700 dark:text-red-300">{entry.errorMessage}</p>
+          {entry.gatewayResponse && (
+            <p className="text-[9px] font-mono text-red-500/70 dark:text-red-400/70 mt-1">{entry.gatewayResponse}</p>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center justify-between gap-4">
          <div className="flex items-center gap-6">
