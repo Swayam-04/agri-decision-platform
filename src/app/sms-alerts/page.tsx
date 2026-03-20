@@ -10,9 +10,11 @@ import type { SmsLogEntry, SmsHistoryResult } from "@/lib/types";
 import {
   MessageSquare, Loader2, Phone, AlertTriangle, CheckCircle2, Send,
   Zap, RefreshCw, XCircle, Clock, BarChart3, Shield, Activity,
-  FileText, Download, Calendar, Filter, FileSpreadsheet, Droplets, TrendingUp
+  FileText, Download, Calendar, Filter, FileSpreadsheet, Droplets, TrendingUp,
+  Globe, Sprout, CloudSun
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { CROP_LIST, REGION_LIST, SEASON_LIST } from "@/lib/types";
 
 type ActiveTab = "reports" | "send" | "history";
 
@@ -20,29 +22,68 @@ export default function SmsAlertsPage() {
   const { t, language } = useTranslation();
   const [activeTab, setActiveTab] = useState<ActiveTab>("reports");
 
-  // Send form state
+  // Colors & Config
+  const statusColors: Record<string, string> = {
+    queued: "bg-gray-100 text-gray-700",
+    sent: "bg-blue-100 text-blue-700",
+    delivered: "bg-emerald-100 text-emerald-700",
+    failed: "bg-red-100 text-red-700",
+    retrying: "bg-yellow-100 text-yellow-700",
+  };
+
+  const priorityColors: Record<string, string> = {
+    Normal: "bg-blue-100 text-blue-700",
+    High: "bg-yellow-100 text-yellow-700",
+    Critical: "bg-red-100 text-red-700",
+  };
+
+  // Form state
   const [sendPhone, setSendPhone] = useState("+919876543210");
   const [sendMessage, setSendMessage] = useState("");
   const [sendPriority, setSendPriority] = useState<"Normal" | "High" | "Critical">("Normal");
+  const [sendGateway, setSendGateway] = useState<string>("mock");
+  const [sendCrop, setSendCrop] = useState<string>("Rice");
+  const [sendRegion, setSendRegion] = useState<string>("Punjab");
+  const [sendSeason, setSendSeason] = useState<string>("Kharif");
+
+  // Results & Loading
+  const [sendResult, setSendResult] = useState<{ success: boolean; logEntry: SmsLogEntry; validationErrors?: string[] } | null>(null);
+  const [historyResult, setHistoryResult] = useState<SmsHistoryResult | null>(null);
+  const [retryResult, setRetryResult] = useState<{ retried: number; succeeded: number; stillFailed: number } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Report state
   const [reportType, setReportType] = useState("disease");
   const [reportRange, setReportRange] = useState("last30");
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
 
-  // Results
-  const [sendResult, setSendResult] = useState<{ success: boolean; logEntry: SmsLogEntry; validationErrors?: string[] } | null>(null);
-  const [historyResult, setHistoryResult] = useState<SmsHistoryResult | null>(null);
-  const [retryResult, setRetryResult] = useState<{ retried: number; succeeded: number; stillFailed: number } | null>(null);
-
-  const [loading, setLoading] = useState(false);
+  // ─── Generate Smart SMS ───
+  async function handleGenerateSmartAlert() {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/sms-alerts/generate-smart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-language": language },
+        body: JSON.stringify({
+          cropType: sendCrop,
+          region: sendRegion,
+          season: sendSeason,
+        }),
+      });
+      const data = await res.json();
+      if (data.message) {
+        setSendMessage(data.message);
+      }
+    } catch (err) { console.error(err); }
+    finally { setGenerating(false); }
+  }
 
   // ─── Generate PDF Report (Simulation) ───
   async function handleDownload(id: string) {
     setDownloading(id);
     await new Promise((r) => setTimeout(r, 2000));
     setDownloading(null);
-    // In a real app, this would trigger a window.open or blob download
     alert(`Downloading ${id}.pdf...`);
   }
 
@@ -55,6 +96,7 @@ export default function SmsAlertsPage() {
         headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({
           phone: sendPhone, message: sendMessage, priority: sendPriority,
+          gateway: sendGateway,
           triggerEvent: "Manual",
         }),
       });
@@ -88,20 +130,6 @@ export default function SmsAlertsPage() {
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }
-
-  const statusColors: Record<string, string> = {
-    queued: "bg-gray-100 text-gray-700",
-    sent: "bg-blue-100 text-blue-700",
-    delivered: "bg-emerald-100 text-emerald-700",
-    failed: "bg-red-100 text-red-700",
-    retrying: "bg-yellow-100 text-yellow-700",
-  };
-
-  const priorityColors: Record<string, string> = {
-    Normal: "bg-blue-100 text-blue-700",
-    High: "bg-yellow-100 text-yellow-700",
-    Critical: "bg-red-100 text-red-700",
-  };
 
   const tabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: "reports", label: t("reports.tabReports"), icon: <FileText className="h-4 w-4" /> },
@@ -270,10 +298,57 @@ export default function SmsAlertsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* New Context Selectors */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase flex items-center gap-1">
+                    <Sprout className="h-3 w-3" /> Crop Context
+                  </label>
+                  <Select value={sendCrop} onValueChange={setSendCrop}>
+                    <SelectTrigger className="rounded-xl border-[#16a34a]/20"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CROP_LIST.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase flex items-center gap-1">
+                    <Globe className="h-3 w-3" /> Region
+                  </label>
+                  <Select value={sendRegion} onValueChange={setSendRegion}>
+                    <SelectTrigger className="rounded-xl border-[#16a34a]/20"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {REGION_LIST.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase flex items-center gap-1">
+                    <CloudSun className="h-3 w-3" /> Season
+                  </label>
+                  <Select value={sendSeason} onValueChange={setSendSeason}>
+                    <SelectTrigger className="rounded-xl border-[#16a34a]/20"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SEASON_LIST.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase">{t("sms.message")}</label>
+                  <div className="flex items-center gap-3">
+                    <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase">{t("sms.message")}</label>
+                    <Button 
+                      onClick={handleGenerateSmartAlert} 
+                      disabled={generating} 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 px-2 text-[10px] font-bold border-[#16a34a]/30 text-[#16a34a] hover:bg-[#16a34a]/10 rounded-lg flex items-center gap-1.5"
+                    >
+                      {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3 fill-current" />}
+                      Generate Smart Alert
+                    </Button>
+                  </div>
                   <span className={`text-[10px] font-bold ${sendMessage.length > 160 ? "text-red-500" : "text-[#16a34a]"}`}>
                     {sendMessage.length}/160 {t("common.chars")}
                   </span>
