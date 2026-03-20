@@ -4,7 +4,7 @@ import { sendSmsAlert } from "@/lib/sms-engine";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { phone, message, priority, triggerEvent, cropType, region, season } = body;
+    const { phone, message, priority, triggerEvent, gateway, cropType, region, season } = body;
 
     if (!phone || !message) {
       return NextResponse.json(
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       message,
       priority,
       triggerEvent,
+      gateway,
       cropType,
       region,
       season,

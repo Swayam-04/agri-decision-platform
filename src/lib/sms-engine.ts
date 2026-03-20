@@ -116,6 +116,50 @@ async function sendViaTwilio(phone: string, message: string, config: SmsGatewayC
   }
 }
 
+// Fast2SMS Gateway
+async function sendViaFast2Sms(phone: string, message: string, config: SmsGatewayConfig): Promise<GatewayResponse> {
+  const apiKey = config.apiKey || process.env.FAST2SMS_API_KEY;
+
+  if (!apiKey) {
+    return { success: false, errorCode: "AUTH_MISSING", errorMessage: "Fast2SMS API key not configured." };
+  }
+
+  try {
+    // Fast2SMS BulkV2 Quick SMS API
+    // Using simple phone normalization for Fast2SMS (remove +91 prefix)
+    const cleanPhone = phone.replace("+91", "");
+    
+    const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+      method: "POST",
+      headers: {
+        "authorization": apiKey,
+        "Content-Type": "application/json",
+        "accept": "application/json"
+      },
+      body: JSON.stringify({
+        route: "q", // Quick SMS
+        message: message,
+        language: "english",
+        numbers: cleanPhone
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.return) {
+      return { success: true, messageId: data.request_id };
+    } else {
+      return { 
+        success: false, 
+        errorCode: "FAST2SMS_ERROR", 
+        errorMessage: typeof data.message === 'string' ? data.message : JSON.stringify(data.message) || "Failed to send SMS via Fast2SMS" 
+      };
+    }
+  } catch (err) {
+    return { success: false, errorCode: "NETWORK_ERROR", errorMessage: `Fast2SMS API error: ${err}` };
+  }
+}
+
 // Government SMS Gateway (NIC / CDAC)
 async function sendViaGovtSms(phone: string, message: string, config: SmsGatewayConfig): Promise<GatewayResponse> {
   if (!config.apiKey) {
@@ -160,6 +204,8 @@ export async function sendSms(phone: string, message: string, config?: SmsGatewa
   switch (gwConfig.provider) {
     case "twilio":
       return sendViaTwilio(phone, message, gwConfig);
+    case "fast2sms":
+      return sendViaFast2Sms(phone, message, gwConfig);
     case "govt_sms":
       return sendViaGovtSms(phone, message, gwConfig);
     case "mock":
@@ -181,9 +227,13 @@ export function getDefaultGatewayConfig(): SmsGatewayConfig {
   const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
   const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
   const govtKey = process.env.GOVT_SMS_API_KEY;
+  const fast2SmsKey = process.env.FAST2SMS_API_KEY;
 
   if (twilioSid && twilioAuth && twilioPhone) {
     return { provider: "twilio", apiKey: twilioSid, apiSecret: twilioAuth, senderId: "CROPAI" };
+  }
+  if (fast2SmsKey) {
+    return { provider: "fast2sms", apiKey: fast2SmsKey, senderId: "FSTSMS" };
   }
   if (govtKey) {
     return { provider: "govt_sms", apiKey: govtKey, senderId: "CROPAI" };
@@ -204,8 +254,8 @@ export function getGatewayConfig(): SmsGatewayConfig {
 const RETRY_DELAYS_MS = [5000, 15000, 30000]; // 5s, 15s, 30s
 const MAX_RETRIES = 3;
 
-async function attemptDeliveryWithRetry(logEntry: SmsLogEntry): Promise<SmsLogEntry> {
-  const config = getDefaultGatewayConfig();
+async function attemptDeliveryWithRetry(logEntry: SmsLogEntry, forcedGateway?: SmsGatewayProvider): Promise<SmsLogEntry> {
+  const config = forcedGateway ? { ...getDefaultGatewayConfig(), provider: forcedGateway } : getDefaultGatewayConfig();
   let entry = { ...logEntry };
 
   while (entry.retryCount < entry.maxRetries) {
@@ -289,7 +339,7 @@ export async function sendSmsAlert(request: SmsSendRequest): Promise<SmsSendResp
       status: "failed",
       retryCount: 0,
       maxRetries: 0,
-      gatewayProvider: getDefaultGatewayConfig().provider,
+      gatewayProvider: request.gateway || getDefaultGatewayConfig().provider,
       errorMessage: `Phone validation failed: ${phoneValidation.errors.join("; ")}`,
       failedAt: new Date().toISOString(),
       cropType: request.cropType || "Unknown",
@@ -312,7 +362,7 @@ export async function sendSmsAlert(request: SmsSendRequest): Promise<SmsSendResp
       status: "failed",
       retryCount: 0,
       maxRetries: 0,
-      gatewayProvider: getDefaultGatewayConfig().provider,
+      gatewayProvider: request.gateway || getDefaultGatewayConfig().provider,
       errorMessage: `Message too long: ${request.message.length}/160 chars`,
       failedAt: new Date().toISOString(),
       cropType: request.cropType || "Unknown",
@@ -334,7 +384,7 @@ export async function sendSmsAlert(request: SmsSendRequest): Promise<SmsSendResp
     status: "queued",
     retryCount: 0,
     maxRetries: MAX_RETRIES,
-    gatewayProvider: getDefaultGatewayConfig().provider,
+    gatewayProvider: request.gateway || getDefaultGatewayConfig().provider,
     cropType: request.cropType || "Unknown",
     region: request.region || "Unknown",
     season: request.season || "Unknown",
@@ -342,7 +392,7 @@ export async function sendSmsAlert(request: SmsSendRequest): Promise<SmsSendResp
   alertHistory.push(logEntry);
 
   // 4. Attempt delivery with retry
-  const result = await attemptDeliveryWithRetry(logEntry);
+  const result = await attemptDeliveryWithRetry(logEntry, request.gateway);
 
   return { success: result.status === "delivered", logEntry: result };
 }

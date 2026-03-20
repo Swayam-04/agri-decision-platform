@@ -405,6 +405,9 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'Low': return 'कम';
       case 'Moderate': return 'मध्यम';
       case 'High': return 'उच्च';
+      case 'sms_smart_disease': return `🌾 अलर्ट: ${vars.region} में ${vars.crop} के लिए ${vars.riskLevel} ${vars.disease} जोखिम (${vars.risk}%)। 48 घंटों में स्प्रे करें। - क्रॉपइंटेल एआई`;
+      case 'sms_smart_pest': return `🌾 अलर्ट: ${vars.region} में ${vars.crop} के लिए ${vars.pest} का खतरा। तत्काल नीम स्प्रे की सलाह। - क्रॉपइंटेल एआई`;
+      case 'sms_smart_weather': return `🌾 अलर्ट: ${vars.region} (${vars.season}): ${vars.insight} - क्रॉपइंटेल एआई`;
       default: return templateId;
     }
   } else if (isOr) {
@@ -700,6 +703,9 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'Low': return 'କମ୍';
       case 'Moderate': return 'ମଧ୍ୟମ';
       case 'High': return 'ଉଚ୍ଚ';
+      case 'sms_smart_disease': return `🌾 ଆଲର୍ଟ: ${vars.region} (${vars.crop}): ${vars.riskLevel} ${vars.disease} ଆଶଙ୍କା (${vars.risk}%) | ୪୮ ଘଣ୍ଟା ମଧ୍ୟରେ ସ୍ପ୍ରେ କରନ୍ତୁ | - କ୍ରପ୍ ଇଣ୍ଟେଲ୍ AI`;
+      case 'sms_smart_pest': return `🌾 ଆଲର୍ଟ: ${vars.region} (${vars.crop}): ${vars.pest} ବିପଦ | ତୁରନ୍ତ ନିମ୍ ସ୍ପ୍ରେ ପାଇଁ ପରାମର୍ଶ | - କ୍ରପ୍ ଇଣ୍ଟେଲ୍ AI`;
+      case 'sms_smart_weather': return `🌾 ଆଲର୍ଟ: ${vars.region} (${vars.season}): ${vars.insight} - କ୍ରପ୍ ଇଣ୍ଟେଲ୍ AI`;
       default: return templateId;
     }
   }
@@ -735,6 +741,9 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
     case 'chat_weather': return `Weather impact on ${vars.season} farming in ${vars.region}: ${vars.insight}`;
     case 'chat_advisory': return `Crop advisory for ${vars.region} during ${vars.season}: Safe crops: ${vars.safe}. Avoid: ${vars.avoid}.`;
     case 'chat_default': return `I understand you're asking about "${vars.input}". Here's what I can help with for ${vars.crop} in ${vars.region}:\n\n1. Disease info\n2. Profit estimates\n3. Market advice\n4. Irrigation guidance\n\nTry asking a specific question!`;
+    case 'sms_smart_disease': return `🌾 Alert: ${vars.riskLevel} ${vars.disease} risk (${vars.risk}%) in ${vars.region} for ${vars.crop}. Spray within 48h. - CropIntel AI`;
+    case 'sms_smart_pest': return `🌾 Alert: High ${vars.pest} risk in ${vars.region} for ${vars.crop}. Immediate control recommended. - CropIntel AI`;
+    case 'sms_smart_weather': return `🌾 Alert: ${vars.region} (${vars.season}): ${vars.insight} - CropIntel AI`;
     default: return templateId;
   }
 }
@@ -1094,6 +1103,8 @@ const ALL_CROPS = ["Rice", "Wheat", "Cotton", "Sugarcane", "Tomato", "Potato", "
 
 export function simulateRiskAdvisory(input: RiskAdvisoryInput): RiskAdvisoryResult {
   const climate = REGION_CLIMATE[input.region] || REGION_CLIMATE["Punjab"];
+  const lang = input.language;
+  const locReg = tLocale(lang, input.region, {});
   const seed = `${input.region}-${input.season}`;
 
   const unsuitableCrops = ALL_CROPS.filter(c => !climate.suitableCrops.includes(c));
@@ -1144,28 +1155,43 @@ export function simulateRiskAdvisory(input: RiskAdvisoryInput): RiskAdvisoryResu
     reason: tLocale(input.language, "cc_well", { region: tLocale(input.language, input.region, {}), season: tLocale(input.language, input.season, {}) }),
   }));
 
-  const seasonInsights: Record<string, string> = {
-    Kharif: input.language === 'hi' 
-      ? `${tLocale(input.language, input.region, {})} में खरीफ का मौसम (जून-अक्टूबर) मानसून की बारिश लाता है। पानी पसंद करने वाली फसलों पर ध्यान दें। उच्च आर्द्रता के कारण फंगल रोगों से सावधान रहें।`
-      : input.language === 'or'
-      ? `${tLocale(input.language, input.region, {})} ରେ ଖରିଫ୍ ଋତୁ (ଜୁନ୍-ଅକ୍ଟୋବର) ମୌସୁମୀ ବର୍ଷା ଆଣିଥାଏ | ଜଳ ପସନ୍ଦ କରୁଥିବା ଫସଲ ଉପରେ ଧ୍ୟାନ ଦିଅନ୍ତୁ | ଅଧିକ ଆର୍ଦ୍ରତା ଯୋଗୁଁ ଫଙ୍ଗାଲ୍ ରୋଗ ପ୍ରତି ସତର୍କ ରୁହନ୍ତୁ |`
-      : `Kharif season in ${input.region} (June-October) brings monsoon rains. Focus on water-loving crops. Watch for fungal diseases due to high humidity.`,
-    Rabi: input.language === 'hi'
-      ? `${tLocale(input.language, input.region, {})} में रबी का मौसम (अक्टूबर-मार्च) ठंडा तापमान प्रदान करता है। गेहूं, सरसों और ठंडे मौसम की सब्जियों के लिए आदर्श। कुल मिलाकर बीमारी का दबाव कम।`
-      : input.language === 'or'
-      ? `${tLocale(input.language, input.region, {})} ରେ ରବି ଋତୁ (ଅକ୍ଟୋବର-ମାର୍ଚ୍ଚ) ଥଣ୍ଡା ତାପମାତ୍ରା ପ୍ରଦାନ କରିଥାଏ | ଗହମ, ସୋରିଷ ଏବଂ ଥଣ୍ଡା ଦିନିଆ ପନିପରିବା ପାଇଁ ଆଦର୍ଶ | ସାମଗ୍ରିକ ଭାବରେ ରୋଗ ଚାପ କମ୍ |`
-      : `Rabi season in ${input.region} (October-March) offers cooler temperatures. Ideal for wheat, mustard, and cool-season vegetables. Lower disease pressure overall.`,
-    Zaid: input.language === 'hi'
-      ? `${tLocale(input.language, input.region, {})} में जायद का मौसम (मार्च-जून) गर्म और शुष्क रहता है। गर्मी सहने वाली, कम अवधि की फसलें चुनें। इस अवधि के दौरान सिंचाई महत्वपूर्ण है।`
-      : input.language === 'or'
-      ? `${tLocale(input.language, input.region, {})} ରେ ଜୈଦ୍ ଋତୁ (ମାର୍ଚ୍ଚ-ଜୁନ୍) ଗରମ ଏବଂ ଶୁଷ୍କ ରହେ | ତାପ ସହ୍ୟ କରିପାରୁଥିବା, କମ୍ ଅବଧିର ଫସଲ ବାଛନ୍ତୁ | ଏହି ସମୟ ମଧ୍ୟରେ ଜଳସେଚନ ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ |`
-      : `Zaid season in ${input.region} (March-June) is hot and dry. Choose heat-tolerant, short-duration crops. Irrigation is critical during this period.`,
+  const seasonInsights: Record<string, string[]> = {
+    Kharif: [
+      lang === 'hi' ? `${locReg} में खरीफ (जून-अक्टूबर) मानसून लाता है। जल-प्रेमी फसलों पर ध्यान दें।` :
+      lang === 'or' ? `${locReg} ରେ ଖରିଫ୍ (ଜୁନ୍-ଅକ୍ଟୋବର) ମୌସୁମୀ ଆଣିଥାଏ | ଜଳ-ପସନ୍ଦ ଫସଲ ଉପରେ ଧ୍ୟାନ ଦିଅନ୍ତୁ |` :
+      `Kharif in ${input.region} (June-Oct) brings monsoon. Focus on water-loving crops.`,
+      lang === 'hi' ? `खरीफ सीजन: उच्च आर्द्रता कीटों को आकर्षित करती है। अपने ${locReg} खेतों की नियमित जांच करें।` :
+      lang === 'or' ? `ଖରିଫ୍ ଋତୁ: ଅଧିକ ଆର୍ଦ୍ରତା କୀଟମାନଙ୍କୁ ଆକର୍ଷିତ କରେ | ନିୟମିତ ଭାବରେ ${locReg} କ୍ଷେତ ଯାଞ୍ଚ କରନ୍ତୁ |` :
+      `Kharif season: High humidity attracts pests. Monitor your ${input.region} fields regularly.`,
+      lang === 'hi' ? `मानसून अलर्ट: भारी बारिश के दौरान ${locReg} में उचित जल निकासी सुनिश्चित करें।` :
+      lang === 'or' ? `ମୌସୁମୀ ସତର୍କତା: ପ୍ରବଳ ବର୍ଷା ସମୟରେ ${locReg} ରେ ଉଚିତ୍ ଜଳ ନିଷ୍କାସନ ନିଶ୍ଚିତ କରନ୍ତୁ |` :
+      `Monsoon Alert: Ensure proper drainage in ${input.region} during heavy rains.`
+    ],
+    Rabi: [
+      lang === 'hi' ? `${locReg} में रबी (अक्टूबर-मार्च) मौसम ठंडा रहता है। गेहूं के लिए आदर्श।` :
+      lang === 'or' ? `${locReg} ରେ ରବି (ଅକ୍ଟୋବର-ମାର୍ଚ୍ଚ) ପାଗ ଥଣ୍ଡା ରହେ | ଗହମ ପାଇଁ ଆଦର୍ଶ |` :
+      `Rabi in ${input.region} (Oct-Mar) is cool & dry. Ideal for wheat and mustard.`,
+      lang === 'hi' ? `रबी सीजन: सुबह की ओस से फंगल संक्रमण हो सकता है। पौधों की दूरी बनाए रखें।` :
+      lang === 'or' ? `ରବି ଋତୁ: ସକାଳର ଶିଶିର ଯୋଗୁଁ ଫଙ୍ଗାଲ୍ ସଂକ୍ରମଣ ହୋଇପାରେ | ଗଛ ମଧ୍ୟରେ ଦୂରତା ବଜାୟ ରଖନ୍ତୁ |` :
+      `Rabi season: Morning dew can cause fungal issues. Maintain plant spacing in ${input.region}.`
+    ],
+    Zaid: [
+      lang === 'hi' ? `${locReg} में जायद (मार्च-जून) गर्म रहता है। गर्मी सहने वाली फसलें चुनें।` :
+      lang === 'or' ? `${locReg} ରେ ଜୈଦ୍ (ମାର୍ଚ୍ଚ-ଜୁନ୍) ଗରମ ରହେ | ତାପ ସହ୍ୟ କରିପାରୁଥିବା ଫସଲ ବାଛନ୍ତୁ |` :
+      `Zaid in ${input.region} (Mar-June) is hot. Choose heat-tolerant, short-duration crops.`,
+      lang === 'hi' ? `गर्मी का अलर्ट: जायद के दौरान सिंचाई महत्वपूर्ण है। मिट्टी की नमी बनाए रखें।` :
+      lang === 'or' ? `ଗରମ ସତର୍କତା: ଜୈଦ୍ ସମୟରେ ଜଳସେଚନ ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ | ମାଟିର ଆର୍ଦ୍ରତା ବଜାୟ ରଖନ୍ତୁ |` :
+      `Heat Alert: Irrigation is critical during Zaid. Maintain soil moisture in ${input.region}.`
+    ]
   };
+
+  const variations = seasonInsights[input.season] || seasonInsights["Kharif"];
+  const selectedInsight = variations[Math.floor(Math.random() * variations.length)];
 
   return {
     cropsToAvoid: cropsToAvoid.map(c => ({ ...c, cropName: tLocale(input.language, c.cropName, {}) })),
     safeCrops,
-    seasonalInsight: seasonInsights[input.season] || seasonInsights["Kharif"],
+    seasonalInsight: selectedInsight,
   };
 }
 
@@ -1720,4 +1746,87 @@ function getSuggestions(message: string, lang?: string): string[] {
   if (/sell|store|price/i.test(message)) return ["What's the disease risk?", "How much water does my crop need?", "What crops to avoid?"];
   if (/water|irrigat/i.test(message)) return ["What's the pest risk?", "Tell me about disease risk", "How much profit expected?"];
   return ["Tell me about disease risk", "How much profit per acre?", "Should I sell now?", "What crops to avoid?"];
+}
+
+export async function generateSmartSms(input: {
+  cropType: string;
+  region: string;
+  season: string;
+  language?: string;
+}): Promise<string> {
+  const { cropType, region, season, language: lang } = input;
+
+  // 1. Add Randomization (Jitter) to simulation inputs
+  const jitter = () => 0.9 + Math.random() * 0.2; // 0.9 to 1.1
+
+  // Gather all potential alerts
+  const potentialAlerts: { type: string; data: any }[] = [];
+
+  // Disease Risk
+  const diseaseRisk = simulateDiseaseRisk({
+    cropType, region, season, language: lang,
+    temperature: 28 * jitter(),
+    humidity: 82 * jitter(),
+    rainfall: 15 * jitter()
+  });
+  if (diseaseRisk.riskPercentage > 60) {
+    potentialAlerts.push({ type: 'disease', data: diseaseRisk });
+  }
+
+  // Pest Outbreak
+  const pestRisk = simulatePestOutbreak({
+    region, season,
+    temperature: 32 * jitter(),
+    humidity: 70 * jitter(),
+    recentRainfall: 5 * jitter(),
+    language: lang
+  });
+  if (pestRisk.riskZone === "High" || pestRisk.riskZone === "Extreme") {
+    potentialAlerts.push({ type: 'pest', data: pestRisk });
+  }
+
+  // Advisory (Always a fallback)
+  const advisory = simulateRiskAdvisory({ region, season, language: lang });
+
+  // 2. Smart Rotation: Pick a random alert from potential or fallback to weather
+  let finalMessage = "";
+  const selected = potentialAlerts.length > 0 
+    ? potentialAlerts[Math.floor(Math.random() * potentialAlerts.length)]
+    : { type: 'weather', data: advisory };
+
+  // Helper to truncate tokens
+  const trunc = (str: string, max: number) => str.length > max ? str.substring(0, max - 3) + "..." : str;
+
+  if (selected.type === 'disease') {
+    const risk = selected.data;
+    const topDisease = risk.topDiseases[0]?.name || "Disease";
+    finalMessage = tLocale(lang, 'sms_smart_disease', {
+      crop: tLocale(lang, cropType, {}),
+      region: tLocale(lang, region, {}),
+      riskLevel: tLocale(lang, risk.riskLevel, {}),
+      risk: risk.riskPercentage,
+      disease: tLocale(lang, topDisease, {})
+    });
+  } else if (selected.type === 'pest') {
+    const risk = selected.data;
+    const pestName = risk.affectedCrops.find((c: any) => c.crop === cropType)?.pest || "Pests";
+    finalMessage = tLocale(lang, 'sms_smart_pest', {
+      crop: tLocale(lang, cropType, {}),
+      region: tLocale(lang, region, {}),
+      pest: tLocale(lang, pestName, {})
+    });
+  } else {
+    // Weather/Advisory fallback
+    const adv = selected.data;
+    // Truncate insight to ensure it fits in 160 chars
+    const shortInsight = trunc(adv.seasonalInsight, 90);
+    finalMessage = tLocale(lang, 'sms_smart_weather', {
+      region: tLocale(lang, region, {}),
+      season: tLocale(lang, season, {}),
+      insight: shortInsight
+    });
+  }
+
+  // 3. Final safety truncation
+  return trunc(finalMessage, 158); 
 }

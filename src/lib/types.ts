@@ -189,7 +189,7 @@ export interface SmsAlertResult {
 
 // ─── Advanced SMS System ───
 
-export type SmsGatewayProvider = "twilio" | "govt_sms" | "mock";
+export type SmsGatewayProvider = "twilio" | "govt_sms" | "fast2sms" | "mock";
 export type SmsDeliveryStatus = "queued" | "sent" | "delivered" | "failed" | "retrying";
 
 export interface SmsGatewayConfig {
@@ -226,6 +226,7 @@ export interface SmsSendRequest {
   message: string;
   priority?: "Normal" | "High" | "Critical";
   triggerEvent?: string;
+  gateway?: SmsGatewayProvider;
   cropType?: string;
   region?: string;
   season?: string;
