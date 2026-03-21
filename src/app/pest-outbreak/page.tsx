@@ -13,6 +13,8 @@ import { Progress } from "@/components/ui/progress";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCallback, useEffect } from "react";
 
+import { getLiveWeather } from "@/lib/weather-service";
+
 const REGION_COORDS: Record<string, { lat: number; lon: number }> = {
   Punjab: { lat: 31.1471, lon: 75.3412 },
   Haryana: { lat: 29.0588, lon: 76.0856 },
@@ -72,16 +74,12 @@ export default function PestOutbreakPage() {
   const fetchWeatherForLocation = useCallback(async () => {
     setLoading(true);
     try {
-      const coords = REGION_COORDS[region] || REGION_COORDS["Punjab"];
-      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,relative_humidity_2m&daily=precipitation_sum&timezone=auto`;
-      const weatherRes = await fetch(weatherUrl, { cache: "no-store" });
-      if (!weatherRes.ok) throw new Error("Weather API failed");
-      const weatherData = await weatherRes.json();
-      
+      // 1. Fetch live weather using unified service
+      const weather = await getLiveWeather(region);
       const current = {
-        temp: Math.round(weatherData.current.temperature_2m),
-        humidity: Math.round(weatherData.current.relative_humidity_2m),
-        rainfall: Math.round(weatherData.daily.precipitation_sum[0] || 0)
+        temp: weather.temp,
+        humidity: weather.humidity,
+        rainfall: weather.rainfall
       };
 
       setTemperature(current.temp);
@@ -96,7 +94,7 @@ export default function PestOutbreakPage() {
     } finally {
       setLoading(false);
     }
-  }, [region, language]);
+  }, [region, language, analyze]);
 
   useEffect(() => {
     fetchWeatherForLocation();

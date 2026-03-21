@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { simulateDiseaseDetection } from "@/lib/ai-engine";
+import { simulateDiseaseDetection, processPythonApiResult } from "@/lib/ai-engine";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +11,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "cropType and imageBase64 are required" }, { status: 400 });
     }
 
-    // Simulate processing delay for realism
+    // Call Python API Backend
+    try {
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, "base64");
+      const blob = new Blob([buffer], { type: "image/jpeg" });
+      const formData = new FormData();
+      formData.append("file", blob, "image.jpg");
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 sec timeout
+
+      const pythonApiUrl = process.env.PYTHON_API_URL || "http://localhost:8000";
+      const pyRes = await fetch(`${pythonApiUrl}/predict`, {
+        method: "POST",
+        body: formData,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (pyRes.ok) {
+        const pyData = await pyRes.json();
+        const result = processPythonApiResult(pyData, cropType, language);
+        return NextResponse.json(result);
+      } else {
+        console.warn(`Python API returned ${pyRes.status}, falling back to simulation.`);
+      }
+    } catch (e) {
+      console.warn("Python API unreachable or failed, falling back to AI simulation.", e);
+    }
+
+    // Simulate processing delay for realism (Fallback)
     await new Promise((r) => setTimeout(r, 1200));
 
     const result = simulateDiseaseDetection(cropType, language);

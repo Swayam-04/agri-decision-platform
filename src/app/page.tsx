@@ -28,6 +28,8 @@ import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Mic } from "lucide-react";
 
+import { getLiveWeather } from "@/lib/weather-service";
+
 interface FullResults {
   diseaseRisk: DiseaseRiskResult | null;
   profit: ProfitPredictionResult | null;
@@ -50,11 +52,15 @@ export default function DashboardPage() {
   async function runFullAnalysis() {
     setLoading(true);
     try {
+      // 1. Fetch live weather using unified service
+      const weather = await getLiveWeather(region);
+      const { temp, humidity, rainfall: rain } = weather;
+
       const [diseaseRiskRes, profitRes, priceRes, advisoryRes, irrigationRes, pestRes, smsRes] = await Promise.all([
         fetch("/api/disease-risk", {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-language": language },
-          body: JSON.stringify({ cropType, region, temperature: 30, humidity: 78, rainfall: 15, season }),
+          body: JSON.stringify({ cropType, region, temperature: temp, humidity, rainfall: rain, season }),
         }),
         fetch("/api/profit-predict", {
           method: "POST",
@@ -74,12 +80,12 @@ export default function DashboardPage() {
         fetch("/api/irrigation", {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-language": language },
-          body: JSON.stringify({ cropType, region, soilType: "Alluvial", temperature: 30, humidity: 78, recentRainfall: 15, season }),
+          body: JSON.stringify({ cropType, region, soilType: "Alluvial", temperature: temp, humidity, recentRainfall: rain, season }),
         }),
         fetch("/api/pest-outbreak", {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-language": language },
-          body: JSON.stringify({ region, season, temperature: 30, humidity: 78, recentRainfall: 15 }),
+          body: JSON.stringify({ region, season, temperature: temp, humidity, recentRainfall: rain }),
         }),
         fetch("/api/sms-alerts", {
           method: "POST",

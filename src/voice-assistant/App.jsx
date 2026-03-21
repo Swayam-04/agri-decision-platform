@@ -8,8 +8,15 @@ import { getCropAdvice } from "./claudeService";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const LANGUAGES = [
-  { id: "hi-IN", label: "हिन्दी (Hindi)" },
-  { id: "or-IN", label: "ଓଡ଼ିଆ (Odia)" },
+  { id: "en", label: "English" },
+  { id: "hi", label: "हिन्दी (Hindi)" },
+  { id: "or", label: "ଓଡ଼ିଆ (Odia)" },
+  { id: "bn", label: "বাংলা (Bengali)" },
+  { id: "te", label: "తెలుగు (Telugu)" },
+  { id: "ta", label: "தமிழ் (Tamil)" },
+  { id: "mr", label: "मराठी (Marathi)" },
+  { id: "pa", label: "ਪੰਜਾਬੀ (Punjabi)" },
+  { id: "kn", label: "ಕನ್ನಡ (Kannada)" },
 ];
 
 function bubbleClass(role) {
@@ -19,8 +26,8 @@ function bubbleClass(role) {
 }
 
 export default function App() {
-  const { t } = useTranslation();
-  const [lang, setLang] = useState("hi-IN");
+  const { t, language } = useTranslation();
+  const [lang, setLang] = useState(language || "en");
   const [messages, setMessages] = useState([
     {
       role: "assistant",

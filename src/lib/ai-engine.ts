@@ -25,6 +25,7 @@ import type {
 } from "./types";
 
 import { CROP_LIST, REGION_LIST, SEASON_LIST } from "./types";
+import { detectTopic, getSources, formatChatbotSources } from "./source-service";
 
 // Seeded randomness for reproducibility given inputs
 const trunc = (str: string, max = 160): string =>
@@ -63,9 +64,15 @@ const DISEASE_DB: Record<string, { diseases: { name: string; severity: "Low" | "
   },
   Tomato: {
     diseases: [
-      { name: "Early Blight", severity: "Medium", description: "Concentric ring-shaped brown spots on lower leaves, spreading upward. Causes defoliation and fruit rot.", remedies: ["Apply Chlorothalonil 75% WP", "Use Mancozeb spray biweekly", "Remove infected lower leaves"], preventive: ["Crop rotation with non-solanaceous crops", "Mulching to prevent soil splash", "Adequate plant spacing"] },
-      { name: "Late Blight", severity: "High", description: "Water-soaked lesions turning dark brown/black. Can destroy entire crop within days under favorable conditions.", remedies: ["Apply Metalaxyl + Mancozeb (Ridomil Gold)", "Use Cymoxanil-based fungicides", "Destroy infected plants immediately"], preventive: ["Avoid overhead irrigation", "Use disease-free transplants", "Plant resistant varieties"] },
-      { name: "Leaf Curl Virus", severity: "High", description: "Upward curling and yellowing of leaves caused by whitefly-transmitted virus. Stunted growth and poor fruiting.", remedies: ["Control whiteflies with Imidacloprid", "Remove and destroy infected plants", "Use yellow sticky traps"], preventive: ["Use virus-resistant varieties", "Install insect-proof net houses", "Avoid planting near old infected crops"] },
+      { name: "Tomato_Early_blight", severity: "Medium", description: "Concentric ring-shaped brown spots on lower leaves, spreading upward. Causes defoliation and fruit rot.", remedies: ["Apply Chlorothalonil 75% WP", "Use Mancozeb spray biweekly", "Remove infected lower leaves"], preventive: ["Crop rotation with non-solanaceous crops", "Mulching to prevent soil splash", "Adequate plant spacing"] },
+      { name: "Tomato_Late_blight", severity: "High", description: "Water-soaked lesions turning dark brown/black. Can destroy entire crop within days under favorable conditions.", remedies: ["Apply Metalaxyl + Mancozeb (Ridomil Gold)", "Use Cymoxanil-based fungicides", "Destroy infected plants immediately"], preventive: ["Avoid overhead irrigation", "Use disease-free transplants", "Plant resistant varieties"] },
+      { name: "Tomato_Bacterial_spot", severity: "Medium", description: "Small water-soaked spots on leaves turning brown, eventually forming scabs.", remedies: ["Apply copper-based fungicides", "Prune affected branches"], preventive: ["Avoid overhead irrigation", "Use pathogen-free seed"] },
+      { name: "Tomato_Leaf_Mold", severity: "Low", description: "Pale greenish-yellow spots on upper leaf surfaces and olive-green mold on the bottom.", remedies: ["Increase ventilation", "Apply labeled fungicides"], preventive: ["Ensure proper spacing", "Keep humidity below 85%"] },
+      { name: "Tomato_Septoria_leaf_spot", severity: "Medium", description: "Numerous small circular spots with dark borders and gray centers.", remedies: ["Apply organic or chemical fungicides", "Remove bottom leaves"], preventive: ["Avoid wetting foliage", "Crop rotation"] },
+      { name: "Tomato_Spider_mites_Two_spotted_spider_mite", severity: "Medium", description: "Leaves show stippling, yellowing, and eventual bronzing/webbing.", remedies: ["Apply insecticidal soap or neem oil", "Use miticides"], preventive: ["Increase humidity", "Remove weeds"] },
+      { name: "Tomato__Target_Spot", severity: "Medium", description: "Brown spots with concentric rings on leaves and sunken lesions on fruit.", remedies: ["Apply fungicides containing chlorothalonil", "Ensure good airflow"], preventive: ["Avoid excessive nitrogen", "Proper spacing"] },
+      { name: "Tomato__Tomato_YellowLeaf__Curl_Virus", severity: "High", description: "Upward curling and yellowing of margins. Stunted growth.", remedies: ["Remove infected plants immediately", "Control whiteflies with Imidacloprid"], preventive: ["Use reflective mulches", "Use resistant varieties"] },
+      { name: "Tomato__Tomato_mosaic_virus", severity: "High", description: "Mottling, yellowing, and crinkling of leaves.", remedies: ["Remove and burn infected plants", "Control aphid populations"], preventive: ["Sanitize tools with bleach", "Avoid smoking near plants"] },
     ],
   },
   Cotton: {
@@ -75,7 +82,8 @@ const DISEASE_DB: Record<string, { diseases: { name: string; severity: "Low" | "
   },
   Potato: {
     diseases: [
-      { name: "Late Blight", severity: "High", description: "Phytophthora infestans causing dark water-soaked patches on leaves and tuber rot. Devastating under cool, wet conditions.", remedies: ["Apply Cymoxanil + Mancozeb", "Use Metalaxyl-based fungicides", "Destroy infected plant material"], preventive: ["Use certified disease-free seed potatoes", "Hill up soil to protect tubers", "Avoid irrigation during cloudy weather"] },
+      { name: "Potato___Early_blight", severity: "Medium", description: "Fungal disease causing target-like brown spots on leaves, leading to defoliation.", remedies: ["Apply Chlorothalonil or Mancozeb", "Remove infected leaves"], preventive: ["Crop rotation", "Ensure adequate spacing"] },
+      { name: "Potato___Late_blight", severity: "High", description: "Phytophthora infestans causing dark water-soaked patches on leaves and tuber rot. Devastating under cool, wet conditions.", remedies: ["Apply Cymoxanil + Mancozeb", "Use Metalaxyl-based fungicides", "Destroy infected plant material"], preventive: ["Use certified disease-free seed potatoes", "Hill up soil to protect tubers", "Avoid irrigation during cloudy weather"] },
       { name: "Black Scurf", severity: "Medium", description: "Rhizoctonia solani causing black crusty spots on tubers. Affects tuber quality and market value.", remedies: ["Seed treatment with Carbendazim", "Apply Trichoderma to soil", "Remove infected tubers before storage"], preventive: ["Crop rotation (3-year cycle)", "Use clean seed stock", "Avoid waterlogged conditions"] },
     ],
   },
@@ -106,6 +114,7 @@ const DISEASE_DB: Record<string, { diseases: { name: string; severity: "Low" | "
   },
   Pepper: {
     diseases: [
+      { name: "Pepper__bell___Bacterial_spot", severity: "Medium", description: "Water-soaked spots turning into scabs on leaves and fruit.", remedies: ["Apply copper-based fungicides", "Remove infected plant debris"], preventive: ["Use disease-free seed", "Avoid overhead watering"] },
       { name: "Bacterial Wilt", severity: "High", description: "Soil-borne bacterial disease causing rapid wilting and death of the plant.", remedies: ["Remove and destroy infected plants", "Avoid waterlogging", "Use bleaching powder @ 15kg/ha"], preventive: ["Crop rotation with non-solanaceous crops", "Use resistant varieties", "Solarization of nursery beds"] },
       { name: "Powdery Mildew", severity: "Medium", description: "White powdery growth on leaves, leading to leaf fall and reduced yield.", remedies: ["Spray Sulfex @ 3g/L", "Apply Dinocap @ 1ml/L", "Remove infected plant parts"], preventive: ["Proper spacing for ventilation", "Avoid overhead irrigation", "Keep fields weed-free"] },
     ],
@@ -888,6 +897,68 @@ export function simulateDiseaseDetection(cropType: string, language?: string): D
   };
 }
 
+export function processPythonApiResult(
+  apiResult: any,
+  cropType: string,
+  language?: string
+): DiseaseDetectionResult {
+  const isHealthy = apiResult.predicted_disease.toLowerCase().includes("healthy");
+  const rawDiseaseName = apiResult.predicted_disease.replace(/_+/g, " ").trim();
+  
+  if (isHealthy) {
+    return {
+      diseaseName: tLocale(language, "Healthy", {}),
+      severity: "Healthy",
+      confidence: apiResult.confidence,
+      description: tLocale(language, "Healthy_desc", { crop: tLocale(language, cropType, {}) }),
+      remedies: [],
+      preventiveMeasures: [
+        tLocale(language, "preventive.healthy.1", {}),
+        tLocale(language, "preventive.healthy.2", {}),
+        tLocale(language, "preventive.healthy.3", {}),
+        tLocale(language, "preventive.healthy.4", {}),
+        tLocale(language, "preventive.healthy.5", {}),
+      ],
+      infectionArea: "0%",
+      topPredictions: apiResult.top_predictions.map((p: any) => ({
+        label: p.label.replace(/_+/g, " ").trim(),
+        confidence: p.confidence
+      })),
+      isStable: !apiResult.low_confidence_flag
+    };
+  }
+
+  // Look up disease in our DISEASE_DB to fetch remedies/preventives
+  let db_description = apiResult.recommended_action || "Fungal or bacterial disease detected.";
+  let db_remedies = [apiResult.recommended_action || "Apply appropriate fungicides."];
+  let db_preventive = ["Ensure proper spacing and ventilation", "Avoid overhead irrigation"];
+
+  const db = DISEASE_DB[cropType];
+  if (db) {
+    const matchedDisease = db.diseases.find(d => d.name === apiResult.predicted_disease);
+    if (matchedDisease) {
+      db_description = matchedDisease.description;
+      db_remedies = matchedDisease.remedies;
+      db_preventive = matchedDisease.preventive;
+    }
+  }
+
+  return {
+    diseaseName: tLocale(language, rawDiseaseName, {}),
+    severity: (apiResult.severity || "Medium") as any,
+    confidence: apiResult.confidence,
+    description: tLocale(language, rawDiseaseName + "_desc", {}) !== rawDiseaseName + "_desc" ? tLocale(language, rawDiseaseName + "_desc", {}) : db_description,
+    remedies: db_remedies.map(r => tLocale(language, r, {}) !== r ? tLocale(language, r, {}) : r),
+    preventiveMeasures: db_preventive.map(p => tLocale(language, p, {}) !== p ? tLocale(language, p, {}) : p),
+    infectionArea: Math.round(apiResult.infected_area_pct) + "%",
+    topPredictions: apiResult.top_predictions.map((p: any) => ({
+      label: p.label.replace(/_+/g, " ").trim(),
+      confidence: p.confidence
+    })),
+    isStable: !apiResult.low_confidence_flag
+  };
+}
+
 // ─── Disease Risk Forecasting ───
 
 const DISEASE_RISK_FACTORS: Record<string, { optimalTemp: [number, number]; humidityThreshold: number; rainfallSensitivity: number }> = {
@@ -1274,6 +1345,110 @@ export function simulatePriceForecast(input: PriceForecastInput): PriceForecastR
     }
   }
 
+  // --- Alternative Profit Logic (Waste-to-Profit) ---
+  let alternativeOptions: { processing: string[]; valueAdd: string[]; local: string[] } | undefined;
+  let alternativeReasoning: string | undefined;
+
+  const baseEcon = CROP_ECONOMICS[crop];
+  if (spoilageRisk !== "Low" || priceTrend === "Falling") {
+    const cropSolutions: Record<string, { processing: string[], valueAdd: string[], local: string[] }> = {
+      Tomato: {
+        processing: [tLocale(input.language, "Ketchup factories", {}), tLocale(input.language, "Tomato sauce units", {})],
+        valueAdd: [tLocale(input.language, "Sun-dried tomatoes", {})],
+        local: [tLocale(input.language, "Street food vendors", {}), tLocale(input.language, "Restaurants", {})]
+      },
+      Potato: {
+        processing: [tLocale(input.language, "Chips factories", {}), tLocale(input.language, "Starch industries", {})],
+        valueAdd: [tLocale(input.language, "Potato flakes", {})],
+        local: [tLocale(input.language, "Snack manufacturers", {})]
+      },
+      Banana: {
+        processing: [tLocale(input.language, "Banana chips units", {}), tLocale(input.language, "Juice factories", {})],
+        valueAdd: [tLocale(input.language, "Dried banana", {})],
+        local: [tLocale(input.language, "Local fruit vendors", {})]
+      },
+      Onion: {
+        processing: [tLocale(input.language, "Dehydration units", {})],
+        valueAdd: [tLocale(input.language, "Onion powder", {})],
+        local: [tLocale(input.language, "Wholesale traders", {})]
+      },
+      Cotton: {
+        processing: [tLocale(input.language, "Textile processing units", {})],
+        valueAdd: [tLocale(input.language, "Cottonseed oil extraction", {})],
+        local: [tLocale(input.language, "Local cotton traders", {})]
+      },
+      Maize: {
+        processing: [tLocale(input.language, "Cornstarch production", {}), tLocale(input.language, "Poultry feed units", {})],
+        valueAdd: [tLocale(input.language, "Maize flour", {})],
+        local: [tLocale(input.language, "Local snack makers", {})]
+      },
+      Wheat: {
+        processing: [tLocale(input.language, "Large flour mills", {})],
+        valueAdd: [tLocale(input.language, "Broken wheat (daliya)", {})],
+        local: [tLocale(input.language, "Animal feed producers", {})]
+      },
+      Rice: {
+        processing: [tLocale(input.language, "Breweries", {}), tLocale(input.language, "Rice bran oil producers", {})],
+        valueAdd: [tLocale(input.language, "Puffed rice snacks", {})],
+        local: [tLocale(input.language, "Poultry feed vendors", {})]
+      }
+    };
+
+    const defaultOptions = {
+      processing: [tLocale(input.language, "Local processing units", {})],
+      valueAdd: [tLocale(input.language, "Compost/organic fertilizer", {})],
+      local: [tLocale(input.language, "Animal feed producers", {})]
+    };
+
+    alternativeOptions = cropSolutions[crop] || defaultOptions;
+    
+    // Add Intelligence Layer (Custom Reasoning)
+    const perishableCrops = ["Tomato", "Banana", "Onion"];
+    const isPerishable = perishableCrops.includes(crop);
+
+    if (input.language === 'hi') {
+      if (isPerishable) {
+        alternativeReasoning = `${tLocale(input.language, crop, {})} अत्यधिक खराब होने वाली फसल है और वर्तमान कीमत कम है। प्रसंस्करण (processing) करने से इसकी शेल्फ लाइफ और मुनाफा बढ़ता है।`;
+      } else {
+        alternativeReasoning = `${tLocale(input.language, crop, {})} को स्टोर किया जा सकता है, लेकिन बाजार की वर्तमान स्थिति में प्रसंस्करण (processing) या मूल्यवर्धन (value addition) से बेहतर लाभ मिल सकता है।`;
+      }
+    } else if (input.language === 'or') {
+      if (isPerishable) {
+        alternativeReasoning = `${tLocale(input.language, crop, {})} ଶୀଘ୍ର ନଷ୍ଟ ହେଉଥିବା ଫସଲ ଏବଂ ବର୍ତ୍ତମାନର ମୂଲ୍ୟ କମ୍ ଅଛି | ପ୍ରକ୍ରିୟାକରଣ (processing) ଦ୍ଵାରା ଜୀବନ ବୃଦ୍ଧି ହୁଏ ଏବଂ ଲାଭ ବଢେ |`;
+      } else {
+        alternativeReasoning = `${tLocale(input.language, crop, {})} କୁ ସଂରକ୍ଷଣ କରାଯାଇପାରିବ, କିନ୍ତୁ ବର୍ତ୍ତମାନର ବଜାର ସ୍ଥିତିରେ ପ୍ରକ୍ରିୟାକରଣ (processing) କିମ୍ବା ମୂଲ୍ୟ ଯୋଗ (value addition) ରୁ ଅଧିକ ଲାଭ ମିଳିପାରିବ |`;
+      }
+    } else if (input.language === 'bn') {
+      if (isPerishable) {
+        alternativeReasoning = `${tLocale(input.language, crop, {})} অত্যন্ত পচনশীল ফসল এবং বর্তমান দাম খুব কম। প্রক্রিয়াজাতকরণ (processing) এর শেল্ফ লাইফ এবং মুনাফা বৃদ্ধি করে।`;
+      } else {
+        alternativeReasoning = `${tLocale(input.language, crop, {})} সংরক্ষণ করা যেতে পারে, কিন্তু বর্তমান বাজার পরিস্থিতি অনুসারে প্রক্রিয়াজাতকরণ বা মূল্য সংযোজন থেকে ভালো লাভ পাওয়া যেতে পারে।`;
+      }
+    } else {
+      if (isPerishable) {
+        alternativeReasoning = `${crop} is highly perishable and current price is low. Processing increases shelf life and profit.`;
+      } else {
+        alternativeReasoning = `${crop} is storable, but current market conditions suggest processing or value addition for better returns.`;
+      }
+    }
+  }
+
+  // --- Extended Decision Logic (Storage Comparison) ---
+  const daysToCompare = shouldStore ? bestDay : 15; // default 15 days for comparison if sell
+  const storageDb = [
+    { name: "ABC Cold Storage", distance: "5km", baseCost: input.storageCostPerDay || 10 },
+    { name: "XYZ Storage", distance: "8km", baseCost: (input.storageCostPerDay || 10) * 0.8 },
+    { name: "Agri-Tech Vaults", distance: "12km", baseCost: (input.storageCostPerDay || 10) * 0.6 },
+  ];
+
+  const coldStorageOptions = storageDb.map(store => ({
+    name: store.name,
+    distance: store.distance,
+    costPerDay: Math.round(store.baseCost),
+    totalCost: Math.round(store.baseCost * input.quantityQuintals * daysToCompare)
+  })).slice(0, 2); // Show top 2 for comparison as requested in flow
+
+
   return {
     decision,
     storeDays: shouldStore ? bestDay : 0,
@@ -1286,6 +1461,9 @@ export function simulatePriceForecast(input: PriceForecastInput): PriceForecastR
     priceTrend,
     priceTimeline: timeline,
     reasoning,
+    alternativeOptions,
+    alternativeReasoning,
+    coldStorageOptions,
   };
 }
 
@@ -1767,12 +1945,39 @@ export function simulateSmsAlerts(input: SmsAlertInput): SmsAlertResult {
       delivered: true,
     });
   } else {
+    let engMsg = `⚠️ ${locCrop} price low & spoilage risk high. Sell to processing units or dry crop to avoid loss.`;
+    let hiMsg = `⚠️ ${locCrop} की कीमतें गिर रही हैं और खराब होने का जोखिम अधिक है। नुकसान से बचने के लिए प्रसंस्करण इकाइयों को बेचें या फसल को सूखा लें।`;
+    let orMsg = `⚠️ ${locCrop} ମୂଲ୍ୟ କମ୍ ଏବଂ ନଷ୍ଟ ହେବାର ଆଶଙ୍କା ଅଧିକ | କ୍ଷତି ଏଡାଇବା ପାଇଁ ପ୍ରକ୍ରିୟାକରଣ ୟୁନିଟ୍ କିମ୍ବା ଶୁଖିଲା ଫସଲ ବିକ୍ରି କରନ୍ତୁ |`;
+    let bnMsg = `⚠️ ${locCrop} এর দাম কম এবং পচনের ঝুঁকি বেশি। লোকসান এড়াতে প্রক্রিয়াকরণ ইউনিটে বা ফসল শুকিয়ে বিক্রি করুন।`;
+
+    if (input.cropType === "Tomato") {
+      engMsg = `⚠️ Tomato spoilage risk high. Sell to ketchup units or dry crop to avoid loss.`;
+      hiMsg = `⚠️ टमाटर खराब होने का जोखिम उच्च है। नुकसान से बचने के लिए केचप कारखानों को बेचें या सुखाएं।`;
+      orMsg = `⚠️ ଟମାଟୋ ନଷ୍ଟ ହେବାର ଆଶଙ୍କା ଅଧିକ | କ୍ଷତି ଏଡାଇବା ପାଇଁ କେଚପ୍ ୟୁନିଟ୍ କୁ ବିକ୍ରି କରନ୍ତୁ କିମ୍ବା ଶୁଖାନ୍ତୁ |`;
+      bnMsg = `⚠️ টমেটো পচনের ঝুঁকি বেশি। লোকসান এড়াতে কেচাপ ইউনিটে বা শুঁকিয়ে বিক্রি করুন।`;
+    } else if (input.cropType === "Potato") {
+      engMsg = `⚠️ Potato price low. Sell to chips factories or starch industries for higher value.`;
+      hiMsg = `⚠️ आलू की कीमत कम है। बेहतर मूल्य के लिए चिप्स कारखानों या स्टार्च उद्योगों को बेचें।`;
+      orMsg = `⚠️ ଆଳୁ ମୂଲ୍ୟ କମ୍ | ଅଧିକ ମୂଲ୍ୟ ପାଇଁ ଚିପ୍ସ କାରଖାନା କିମ୍ବା ଷ୍ଟାର୍ଚ ଇଣ୍ଡଷ୍ଟ୍ରିକୁ ବିକ୍ରି କରନ୍ତୁ |`;
+      bnMsg = `⚠️ আলুর দাম কম। বেশি লাভের জন্য চিপস কারখানা বা স্টার্চ শিল্পে বিক্রি করুন।`;
+    } else if (input.cropType === "Banana") {
+      engMsg = `⚠️ Banana spoilage risk high. Convert to chips or sell to juice factories.`;
+      hiMsg = `⚠️ केले के खराब होने का जोखिम अधिक है। चिप्स बनाएं या रस कारखानों को बेचें।`;
+      orMsg = `⚠️ କଦଳୀ ନଷ୍ଟ ହେବାର ଆଶଙ୍କା ଅଧିକ | ଚିପ୍ସ ପ୍ରସ୍ତୁତ କରନ୍ତୁ କିମ୍ବା ଜୁସ୍ ଫ୍ୟାକ୍ଟ୍ରିକୁ ବିକ୍ରି କରନ୍ତୁ |`;
+      bnMsg = `⚠️ কলার পচনের ঝুঁকি বেশি। চিপস তৈরি করুন বা জুস কারখানায় বিক্রি করুন।`;
+    } else if (input.cropType === "Onion") {
+      engMsg = `⚠️ Onion price falling. Sell to dehydration units to make onion powder.`;
+      hiMsg = `⚠️ प्याज की कीमत गिर रही है। प्याज पाउडर बनाने के लिए डिहाइड्रेशन इकाइयों को बेचें।`;
+      orMsg = `⚠️ ପିଆଜ ମୂଲ୍ୟ ହ୍ରାସ ପାଉଛି | ପିଆଜ ପାଉଡର ତିଆରି କରିବା ପାଇଁ ଡିହାଇଡ୍ରେସନ୍ ୟୁନିଟ୍ କୁ ବିକ୍ରି କରନ୍ତୁ |`;
+      bnMsg = `⚠️ পেঁয়াজের দাম পড়ছে। পেঁয়াজের গুঁড়ো তৈরি করতে ডিহাইড্রেশন ইউনিটে বিক্রি করুন।`;
+    }
+
     alerts.push({
       id: `sms-${id++}`,
       timestamp: new Date(now.getTime() - 14400000).toISOString(),
       phone,
-      message: tLocale(lang, "sms_price_down", { crop: locCrop, region: locRegion }),
-      triggerEvent: "Price Drop Warning",
+      message: lang === 'hi' ? hiMsg : lang === 'or' ? orMsg : lang === 'bn' ? bnMsg : engMsg,
+      triggerEvent: "Waste-to-Profit Advisory",
       priority: "High",
       delivered: true,
     });
@@ -1878,6 +2083,11 @@ export function simulateChatbot(input: ChatbotInput): ChatbotResult {
   const detectedSeason = SEASON_LIST.find(s => message.includes(s.toLowerCase()));
   if (detectedSeason) season = detectedSeason;
 
+  // 1.5 Sourcing logic
+  const topic = detectTopic(input.message);
+  const sources = getSources(topic);
+  const sourceText = formatChatbotSources(sources);
+
   // 2. Specialized Categorical Responses
   
   // Disease
@@ -1892,7 +2102,7 @@ export function simulateChatbot(input: ChatbotInput): ChatbotResult {
         risk: risk.riskPercentage,
         diseases: risk.topDiseases.map(d => d.name).join(", "),
         rec: risk.recommendation
-      }),
+      }) + sourceText,
       suggestions: getSuggestions(message, lang)
     };
   }
@@ -1909,7 +2119,7 @@ export function simulateChatbot(input: ChatbotInput): ChatbotResult {
         unit: tLocale(lang, profit.yieldUnit, {}),
         profit: `Rs ${profit.profitPerAcre.toLocaleString()}`,
         price: profit.expectedMarketPrice
-      }),
+      }) + sourceText,
       suggestions: getSuggestions(message, lang)
     };
   }
@@ -1923,7 +2133,7 @@ export function simulateChatbot(input: ChatbotInput): ChatbotResult {
         region: tLocale(lang, region, {}),
         decision: tLocale(lang, price.decision, {}),
         reason: price.reasoning
-      }),
+      }) + sourceText,
       suggestions: getSuggestions(message, lang)
     };
   }
@@ -1938,7 +2148,7 @@ export function simulateChatbot(input: ChatbotInput): ChatbotResult {
         moist: irrigation.soilMoisturePercent,
         need: tLocale(lang, irrigation.irrigationNeed, {}),
         rec: irrigation.recommendation
-      }),
+      }) + sourceText,
       suggestions: getSuggestions(message, lang)
     };
   }
@@ -1953,7 +2163,7 @@ export function simulateChatbot(input: ChatbotInput): ChatbotResult {
         risk: tLocale(lang, pest.riskZone, {}),
         pests: pest.affectedCrops.filter(c => c.crop.includes(crop) || c.crop === crop).map(c => c.pest).join(", ") || tLocale(lang, "Aphids", {}),
         rec: pest.preventiveAdvisory[0]
-      }),
+      }) + sourceText,
       suggestions: getSuggestions(message, lang)
     };
   }
@@ -1966,7 +2176,7 @@ export function simulateChatbot(input: ChatbotInput): ChatbotResult {
         region: tLocale(lang, region, {}),
         season: tLocale(lang, season, {}),
         insight: advisory.seasonalInsight
-      }),
+      }) + sourceText,
       suggestions: getSuggestions(message, lang)
     };
   }
@@ -1980,7 +2190,7 @@ export function simulateChatbot(input: ChatbotInput): ChatbotResult {
         season: tLocale(lang, season, {}),
         safe: advisory.safeCrops.map(c => c.name).join(", "),
         avoid: advisory.cropsToAvoid.slice(0, 2).map(c => c.cropName).join(", ")
-      }),
+      }) + sourceText,
       suggestions: getSuggestions(message, lang)
     };
   }
@@ -1991,7 +2201,7 @@ export function simulateChatbot(input: ChatbotInput): ChatbotResult {
       input: input.message,
       crop: tLocale(lang, crop, {}),
       region: tLocale(lang, region, {})
-    }),
+    }) + sourceText,
     suggestions: getSuggestions(message, lang),
   };
 }
@@ -2155,8 +2365,22 @@ export async function generateModuleAlert(input: {
   region: string;
   season: string;
   language?: string;
+  // Optional live weather context
+  temperature?: number;
+  humidity?: number;
+  rainfall?: number;
 }): Promise<string> {
-  const { activeModule, cropType, region, season, language: lang = "en" } = input;
+  const { 
+    activeModule, cropType, region, season, 
+    language: lang = "en",
+    temperature: liveTemp,
+    humidity: liveHum,
+    rainfall: liveRain
+  } = input;
+
+  const jitteredTemp = liveTemp ?? (28 * jitter());
+  const jitteredHum = liveHum ?? (82 * jitter());
+  const jitteredRain = liveRain ?? (15 * jitter());
 
   let message = "";
 
@@ -2175,9 +2399,9 @@ export async function generateModuleAlert(input: {
     case "Disease Risk": {
       const result = simulateDiseaseRisk({
         cropType, region, season, language: lang,
-        temperature: 28 * jitter(),
-        humidity: 82 * jitter(),
-        rainfall: 15 * jitter()
+        temperature: jitteredTemp,
+        humidity: jitteredHum,
+        rainfall: jitteredRain
       });
       message = `🌦️ Alert: ${result.riskLevel} disease risk for ${cropType} in ${region}. Weather conditions favor infection. Take precautions. - CropIntel AI`;
       break;
@@ -2186,9 +2410,9 @@ export async function generateModuleAlert(input: {
     case "Pest Outbreak": {
       const result = simulatePestOutbreak({
         region, season,
-        temperature: 32 * jitter(),
-        humidity: 70 * jitter(),
-        recentRainfall: 5 * jitter(),
+        temperature: liveTemp ?? (32 * jitter()),
+        humidity: liveHum ?? (70 * jitter()),
+        recentRainfall: liveRain ?? (5 * jitter()),
         language: lang
       });
       const topPest = result.affectedCrops.find(c => c.crop === cropType)?.pest || "Pests";
@@ -2237,12 +2461,35 @@ export async function generateDetailedAlert(input: {
   region: string;
   season: string;
   language?: string;
+  // Optional live weather context
+  temperature?: number;
+  humidity?: number;
+  rainfall?: number;
 }): Promise<{ rich: string; compact: string }> {
-  const { cropType, region, season, language: lang = "en" } = input;
+  const { 
+    cropType, region, season, 
+    language: lang = "en",
+    temperature: liveTemp,
+    humidity: liveHum,
+    rainfall: liveRain
+  } = input;
 
-  // 1. Fetch data from all modules (Simulated)
-  const riskRes = simulateDiseaseRisk({ cropType, region, season, temperature: 28 * jitter(), humidity: 82 * jitter(), rainfall: 15 * jitter(), language: lang });
-  const pestRes = simulatePestOutbreak({ region, season, temperature: 31 * jitter(), humidity: 75 * jitter(), recentRainfall: 10 * jitter(), language: lang });
+  // 1. Fetch data from all modules (Prioritizing live weather if provided)
+  const riskRes = simulateDiseaseRisk({ 
+    cropType, region, season, 
+    temperature: liveTemp ?? (28 * jitter()), 
+    humidity: liveHum ?? (82 * jitter()), 
+    rainfall: liveRain ?? (15 * jitter()), 
+    language: lang 
+  });
+  
+  const pestRes = simulatePestOutbreak({ 
+    region, season, 
+    temperature: liveTemp ?? (31 * jitter()), 
+    humidity: liveHum ?? (75 * jitter()), 
+    recentRainfall: liveRain ?? (10 * jitter()), 
+    language: lang 
+  });
   const profitRes = simulateProfitPrediction({ cropType, region, season, acreage: 1, soilType: "Alluvial", irrigationType: "Drip", language: lang });
   const priceRes = simulatePriceForecast({ cropType, region, quantityQuintals: 50, currentPrice: 2200, storageCostPerDay: 1, language: lang });
   const advisoryRes = simulateRiskAdvisory({ region, season, language: lang });

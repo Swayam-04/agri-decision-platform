@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CROP_LIST, REGION_LIST, SEASON_LIST } from "@/lib/types";
 import type { DiseaseRiskResult } from "@/lib/types";
 import { ShieldAlert, Loader2, CloudRain, Thermometer, Droplets, MapPin, Calendar, TrendingUp, TrendingDown, CheckCircle2 } from "lucide-react";
+import { getLiveWeather } from "@/lib/weather-service";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const REGION_COORDS: Record<string, { lat: number; lon: number }> = {
@@ -56,6 +57,11 @@ export default function DiseaseRiskPage() {
   const [locationUsed, setLocationUsed] = useState<string>("");
   const [weatherError, setWeatherError] = useState<string>("");
 
+  // Current Weather State
+  const [temperature, setTemperature] = useState<number>(30);
+  const [humidity, setHumidity] = useState<number>(78);
+  const [rainfall, setRainfall] = useState<number>(15);
+
   const riskColors: Record<string, { bg: string; text: string; border: string; icon: string; bar: string }> = {
     Low: { bg: "bg-[#16a34a]/15", text: "text-[#16a34a]", border: "border-[#16a34a]/40", icon: "🌿", bar: "bg-[#16a34a]" },
     Medium: { bg: "bg-[#f59e0b]/20", text: "text-[#d97706]", border: "border-[#f59e0b]/40", icon: "⚠️", bar: "bg-[#f59e0b]" },
@@ -83,12 +89,19 @@ export default function DiseaseRiskPage() {
     setForecast7Days([]);
     
     try {
+      // 1. Fetch live weather using unified service
+      const weather = await getLiveWeather(region);
+      setTemperature(weather.temp);
+      setHumidity(weather.humidity);
+      setRainfall(weather.rainfall);
+
+      // 2. Fetch daily forecast separately for the chart (Keep Open-Meteo for this)
       const coords = REGION_COORDS[region] || REGION_COORDS["Punjab"];
       setLocationUsed(t(`regions.${region}`) || region);
       
       console.log("Selected Location:", region, coords);
 
-      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&hourly=relative_humidity_2m&timezone=auto`;
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,relative_humidity_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&hourly=relative_humidity_2m&timezone=auto`;
       
       // Disable caching
       const weatherRes = await fetch(weatherUrl, { cache: "no-store" });
@@ -108,7 +121,10 @@ export default function DiseaseRiskPage() {
         const avgHum = dayHumidities.reduce((a: number, b: number) => a + b, 0) / 24;
         
         const avgTemp = (weatherData.daily.temperature_2m_max[i] + weatherData.daily.temperature_2m_min[i]) / 2;
-        const rainfall = weatherData.daily.precipitation_sum[i];
+        // For today (index 0), prefer 'current' precipitation if available and > 0
+        const rainfall = (i === 0 && weatherData.current?.precipitation > 0) 
+          ? weatherData.current.precipitation 
+          : weatherData.daily.precipitation_sum[i];
         
         const { level, percent } = calculateRisk(avgHum, rainfall);
         
@@ -128,15 +144,14 @@ export default function DiseaseRiskPage() {
       setForecast7Days(days);
 
       // Call our backend API to get crop-specific AI details based on current day's weather
-      const currentDay = days[0];
       const res = await fetch("/api/disease-risk", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({
           cropType, region, season,
-          temperature: currentDay.temp,
-          humidity: currentDay.humidity,
-          rainfall: currentDay.rainfall,
+          temperature,
+          humidity,
+          rainfall,
         }),
       });
       const backendResult = await res.json();
@@ -144,8 +159,8 @@ export default function DiseaseRiskPage() {
       // Merge our strict weather-based risk logic into the AI result object to seamlessly update UI
       setResult({
         ...backendResult,
-        riskPercentage: currentDay.riskPercentage,
-        riskLevel: currentDay.riskLevel
+        riskPercentage: days[0].riskPercentage,
+        riskLevel: days[0].riskLevel
       });
 
     } catch (err) {
@@ -301,15 +316,15 @@ export default function DiseaseRiskPage() {
                   <div className="mt-5 grid grid-cols-3 gap-2 border-t border-[rgba(61,31,10,0.1)] pt-4">
                      <div className="text-center">
                         <Thermometer className="w-5 h-5 mx-auto text-[#f59e0b] mb-1" />
-                        <div className="text-sm font-bold text-[#3d1f0a]">{forecast7Days[0].temp}°C</div>
+                        <div className="text-sm font-bold text-[#3d1f0a]">{temperature}°C</div>
                      </div>
                      <div className="text-center border-l border-r border-[rgba(61,31,10,0.1)]">
                         <Droplets className="w-5 h-5 mx-auto text-[#16a34a] mb-1" />
-                        <div className="text-sm font-bold text-[#3d1f0a]">{forecast7Days[0].humidity}%</div>
+                        <div className="text-sm font-bold text-[#3d1f0a]">{humidity}%</div>
                      </div>
                      <div className="text-center">
                         <CloudRain className="w-5 h-5 mx-auto text-[#3b82f6] mb-1" />
-                        <div className="text-sm font-bold text-[#3d1f0a]">{forecast7Days[0].rainfall} mm</div>
+                        <div className="text-sm font-bold text-[#3d1f0a]">{rainfall} mm</div>
                      </div>
                   </div>
                 </CardContent>

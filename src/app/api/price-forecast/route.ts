@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
 
     const result = simulatePriceForecast({ cropType, cropTypes, region, currentPrice, currentPrices, quantityQuintals, storageCostPerDay, language });
     return NextResponse.json(result);
-  } catch {
+  } catch (err) {
+    console.error("Forecast API Error:", err);
     return NextResponse.json({ error: "Failed to forecast price" }, { status: 500 });
   }
 }

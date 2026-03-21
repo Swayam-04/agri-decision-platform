@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CROP_LIST, REGION_LIST } from "@/lib/types";
 import type { PriceForecastResult } from "@/lib/types";
-import { Store, Loader2, TrendingUp, TrendingDown, Minus, CheckCircle2, AlertTriangle, Package } from "lucide-react";
+import { Store, Loader2, TrendingUp, TrendingDown, Minus, CheckCircle2, AlertTriangle, Package, Warehouse, Lightbulb } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -388,6 +388,86 @@ export default function PriceForecastPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* 1. Waste-to-Profit Alternative Options */}
+            {result.alternativeOptions && (
+              <Card className="bg-[#fffbeb] dark:bg-[#78350f]/20 border-[#fde68a] dark:border-[#92400e]/50 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#f59e0b]"></div>
+                <CardContent className="pt-5 pb-5">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-[#fef3c7] dark:bg-[#92400e]/40 p-2 rounded-full shrink-0">
+                      <span className="text-xl">♻️</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-bold text-[#78350f] dark:text-[#fcd34d] tracking-normal mb-3">
+                        {t("price.altProfitOptions") !== "price.altProfitOptions" ? t("price.altProfitOptions") : `Alternative Profit Options (${(!isMultiCrop ? cropType : "Selected Crop")})`}
+                      </h3>
+                      
+                      <ol className="list-decimal list-inside space-y-2 mb-4">
+                        <li className="text-sm text-[#92400e] dark:text-[#fde68a] marker:text-[#d97706] marker:font-bold">
+                          {result.alternativeOptions.processing[0] || "Process into specialized derivatives"}
+                        </li>
+                        <li className="text-sm text-[#92400e] dark:text-[#fde68a] marker:text-[#d97706] marker:font-bold">
+                          {result.alternativeOptions.valueAdd[0] || "Create value-added consumer goods"}
+                        </li>
+                        <li className="text-sm text-[#92400e] dark:text-[#fde68a] marker:text-[#d97706] marker:font-bold">
+                          {result.alternativeOptions.local[0] || "Supply to local secondary markets"}
+                        </li>
+                      </ol>
+
+                      {result.alternativeReasoning && (
+                        <div>
+                          <p className="text-[12px] font-bold text-[#d97706] dark:text-[#fbbf24] mb-1">💡 {t("price.reason") !== "price.reason" ? t("price.reason") : "Reason"}:</p>
+                          <p className="text-sm text-[#92400e] dark:text-[#fde68a] leading-relaxed">{result.alternativeReasoning}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 2. Cold Storage Comparison */}
+            {result.coldStorageOptions && result.coldStorageOptions.length > 0 && (
+              <Card className="bg-cyan-50 dark:bg-cyan-900/10 border-cyan-200 dark:border-cyan-900/50 overflow-hidden">
+                <div className="bg-cyan-600 px-4 py-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Warehouse className="h-4 w-4 text-white" />
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Nearby Cold Storage Comparison</h3>
+                  </div>
+                  <Badge className="bg-white/20 text-white border-none text-[10px]">Based on {quantity} Quintals</Badge>
+                </div>
+                <CardContent className="pt-4 pb-4 px-0">
+                  <div className="px-4 mb-4">
+                    <div className="grid grid-cols-4 text-[10px] font-bold text-cyan-700 dark:text-cyan-400 uppercase tracking-widest mb-2 px-2">
+                      <div className="col-span-1">Facility</div>
+                      <div className="text-center">Dist</div>
+                      <div className="text-center">Rate/Day</div>
+                      <div className="text-right">Total Cost</div>
+                    </div>
+                    <div className="space-y-1">
+                      {result.coldStorageOptions.map((store, idx) => (
+                        <div key={idx} className={`grid grid-cols-4 items-center p-2 rounded-lg text-sm ${idx === 1 ? 'bg-cyan-100/50 dark:bg-cyan-900/30 border border-cyan-200/50' : ''}`}>
+                          <div className="col-span-1 font-bold text-cyan-900 dark:text-cyan-100 truncate">{store.name}</div>
+                          <div className="text-center text-cyan-700 dark:text-cyan-400 text-xs">{store.distance}</div>
+                          <div className="text-center text-cyan-800 dark:text-cyan-300">₹{store.costPerDay}</div>
+                          <div className="text-right font-mono font-bold text-cyan-900 dark:text-cyan-100">₹{store.totalCost.toLocaleString("en-IN")}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mx-4 bg-white/60 dark:bg-black/20 p-3 rounded-xl border border-cyan-100 dark:border-cyan-900/30">
+                    <p className="text-[11px] font-bold text-cyan-700 dark:text-cyan-400 mb-1 uppercase flex items-center gap-1">
+                      <Lightbulb className="h-3 w-3" /> AI Storage Advisory
+                    </p>
+                    <p className="text-xs text-cyan-800 dark:text-cyan-300 leading-relaxed italic">
+                      "{result.coldStorageOptions[1].name} offers a 20% lower rate. Storing for {result.decision === "Store" ? result.storeDays : 15} days here will cost ₹{result.coldStorageOptions[1].totalCost.toLocaleString("en-IN")}, saving you ₹{(result.coldStorageOptions[0].totalCost - result.coldStorageOptions[1].totalCost).toLocaleString("en-IN")} compared to the nearest facility."
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Individual Breakdown for Multi-Crop */}
             {isMultiCrop && result.individualDecisions && (

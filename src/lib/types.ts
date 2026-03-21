@@ -91,6 +91,20 @@ export interface PriceForecastResult {
   priceTrend: "Rising" | "Stable" | "Falling";
   priceTimeline: { day: number; price: number }[];
   reasoning: string;
+  // SELL Extensions
+  alternativeOptions?: {
+    processing: string[];
+    valueAdd: string[];
+    local: string[];
+  };
+  alternativeReasoning?: string;
+  // STORE Extensions
+  coldStorageOptions?: {
+    name: string;
+    distance: string;
+    costPerDay: number;
+    totalCost: number;
+  }[];
   // Multi-crop additions
   individualDecisions?: Record<string, PriceForecastResult>;
   combinedStrategy?: string;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { detectTopic, getSources, formatVoiceSources } from "@/lib/source-service";
 
 const SYSTEM_PROMPT = `You are KisanBot, an AI farming assistant.
 Answer only crop-related questions.
@@ -80,7 +81,15 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await apiRes.json();
-    const reply = extractGroqText(data) || "Sorry, I couldn’t generate an answer.";
+    const replyText = extractGroqText(data) || "Sorry, I couldn’t generate an answer.";
+    
+    // Add sourcing for voice assistant
+    const topic = detectTopic(text);
+    const sources = getSources(topic);
+    const sourceVoice = formatVoiceSources(sources);
+    
+    const reply = replyText + sourceVoice;
+    
     return NextResponse.json({ reply });
   } catch {
     return NextResponse.json({ error: "Voice assistant failed to respond" }, { status: 500 });

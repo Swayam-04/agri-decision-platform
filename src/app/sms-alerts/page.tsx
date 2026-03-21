@@ -11,10 +11,12 @@ import {
   MessageSquare, Loader2, Phone, AlertTriangle, CheckCircle2, Send,
   Zap, RefreshCw, XCircle, Clock, BarChart3, Shield, Activity,
   FileText, Download, Calendar, Filter, FileSpreadsheet, Droplets, TrendingUp,
-  Globe, Sprout, CloudSun, Users, CheckSquare
+  Globe, Sprout, CloudSun, Users, CheckSquare, MapPin
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { CROP_LIST, REGION_LIST, SEASON_LIST } from "@/lib/types";
+import { getLiveWeather } from "@/lib/weather-service";
+import { toast } from "sonner";
 
 type ActiveTab = "reports" | "send" | "history" | "farmers";
 
@@ -76,11 +78,118 @@ export default function SmsAlertsPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
 
+  // Comprehensive Report Config State
+  const [repState, setRepState] = useState("Odisha");
+  const [repDistrict, setRepDistrict] = useState("Khordha");
+  const [repLocalArea, setRepLocalArea] = useState("Bhubaneswar");
+  const [repSeason, setRepSeason] = useState("Kharif");
+  const [repCrop, setRepCrop] = useState("Rice");
+  const [repLang, setRepLang] = useState("en");
+  const [gpsActive, setGpsActive] = useState(false);
+  const [findingLocation, setFindingLocation] = useState(false);
+
+  // States and districts mock (Stateful to allow GPS additions)
+  const [availableStates, setAvailableStates] = useState<Record<string, string[]>>({
+    "Odisha": ["Khordha", "Cuttack", "Ganjam", "Balasore"],
+    "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala"],
+    "Maharashtra": ["Pune", "Nagpur", "Nashik", "Aurangabad"]
+  });
+
+  const [availableAreas, setAvailableAreas] = useState<Record<string, string[]>>({
+    "Khordha": ["Bhubaneswar", "Jatni", "Khurda Town"],
+    "Ludhiana": ["Mullanpur", "Jagraon", "Khanna"],
+    "Pune": ["Baramati", "Shirur", "Indapur"]
+  });
+
+  const cropsBySeason: Record<string, string[]> = {
+    "Kharif": ["Rice", "Maize", "Cotton", "Soybean"],
+    "Rabi": ["Wheat", "Mustard", "Barley", "Gram"],
+    "Zaid": ["Watermelon", "Cucumber", "Bitter Gourd", "Pumpkin"]
+  };
+
+  async function handleGpsClick() {
+    setFindingLocation(true);
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            // Precise Reverse Geocoding using Nominatim (OpenStreetMap)
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
+              { headers: { "Accept-Language": "en" } }
+            );
+            const data = await response.json();
+            const addr = data.address || {};
+            
+            // Extract the most relevant location parts
+            const detectedState = addr.state || addr.province || "Punjab";
+            const detectedDistrict = addr.state_district || addr.county || addr.district || "Ludhiana";
+            const detectedArea = addr.suburb || addr.city_district || addr.village || addr.town || addr.city || "Mullanpur";
+
+            setGpsActive(true);
+            setRepState(detectedState);
+            
+            // Update district/area lists dynamically
+            setAvailableStates(prev => {
+              const next = { ...prev };
+              if (!next[detectedState]) {
+                next[detectedState] = [detectedDistrict];
+              } else if (!next[detectedState].includes(detectedDistrict)) {
+                next[detectedState] = [...next[detectedState], detectedDistrict];
+              }
+              return next;
+            });
+
+            setAvailableAreas(prev => {
+              const next = { ...prev };
+              if (!next[detectedDistrict]) {
+                next[detectedDistrict] = [detectedArea];
+              } else if (!next[detectedDistrict].includes(detectedArea)) {
+                next[detectedDistrict] = [...next[detectedDistrict], detectedArea];
+              }
+              return next;
+            });
+            
+            setRepDistrict(detectedDistrict);
+            setRepLocalArea(detectedArea);
+
+            toast.success("Location Detected Successfully", { 
+              description: `📍 Positioned at ${detectedArea}, ${detectedDistrict}, ${detectedState}` 
+            });
+          } catch (err) {
+            console.error("Reverse Geocoding Error:", err);
+            toast.error("Location Error", { description: "Coordinates fetched, but failed to identify the area name." });
+          } finally {
+            setFindingLocation(false);
+          }
+        },
+        (error) => {
+          setFindingLocation(false);
+          const msg = error.code === 1 ? "Location access denied. Please enable it in browser settings." : "GPS Error. Please try again.";
+          toast.error("GPS Error", { description: msg });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      setFindingLocation(false);
+      toast.error("GPS Error", { description: "Geolocation not supported by your browser." });
+    }
+  }
+
   // ─── Generate Module-Based SMS (Auto) ───
   async function handleGenerateModuleAlert(moduleName?: string) {
     const targetModule = moduleName || activeModule;
     setGenerating(true);
     try {
+      // Fetch live weather using unified service
+      const weather = await getLiveWeather(sendRegion);
+      const { temp, humidity, rainfall: rain } = weather;
+
       const res = await fetch("/api/sms-alerts/generate-module", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-language": language },
@@ -89,6 +198,9 @@ export default function SmsAlertsPage() {
           cropType: sendCrop,
           region: sendRegion,
           season: sendSeason,
+          temperature: temp,
+          humidity,
+          rainfall: rain
         }),
       });
       const data = await res.json();
@@ -103,6 +215,10 @@ export default function SmsAlertsPage() {
   async function handleGenerateComprehensiveAlert() {
     setGenerating(true);
     try {
+      // Fetch live weather using unified service
+      const weather = await getLiveWeather(sendRegion);
+      const { temp, humidity, rainfall: rain } = weather;
+
       const res = await fetch("/api/sms-alerts/generate-comprehensive", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-language": language },
@@ -110,6 +226,9 @@ export default function SmsAlertsPage() {
           cropType: sendCrop,
           region: sendRegion,
           season: sendSeason,
+          temperature: temp,
+          humidity,
+          rainfall: rain
         }),
       });
       const data = await res.json();
@@ -127,12 +246,43 @@ export default function SmsAlertsPage() {
     finally { setGenerating(false); }
   }
 
-  // ─── Generate PDF Report (Simulation) ───
+  // ─── Generate PDF Report ───
   async function handleDownload(id: string) {
     setDownloading(id);
-    await new Promise((r) => setTimeout(r, 2000));
-    setDownloading(null);
-    alert(`Downloading ${id}.pdf...`);
+    const fileName = id === "custom_report" ? `Agri_Intelligence_${repCrop}_${repState}.pdf` : `${id}.pdf`;
+    
+    toast.success("Report Download Started", {
+      description: `📥 ${fileName} is downloading...`
+    });
+
+    try {
+      let endpoint = `/api/download-report?type=${id}`;
+      if (id === "custom_report") {
+        endpoint = `/api/generate-report?state=${encodeURIComponent(repState)}&district=${encodeURIComponent(repDistrict)}&localArea=${encodeURIComponent(repLocalArea)}&season=${encodeURIComponent(repSeason)}&crop=${encodeURIComponent(repCrop)}&language=${repLang}`;
+      } else {
+        endpoint += `&crop=${encodeURIComponent(sendCrop)}&region=${encodeURIComponent(sendRegion)}`;
+      }
+
+      const res = await fetch(endpoint);
+      if (!res.ok) throw new Error("Failed to generate report");
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      toast.error("Download Failed", {
+        description: "An error occurred while generating the report."
+      });
+    } finally {
+      setDownloading(null);
+    }
   }
 
   // ─── Send Single SMS ───
@@ -233,20 +383,20 @@ export default function SmsAlertsPage() {
   }
 
   const tabs: { id: ActiveTab; label: string; icon: React.ReactNode; defaultAction?: () => void }[] = [
-    { id: "reports", label: t("reports.tabReports"), icon: <FileText className="h-4 w-4" /> },
-    { id: "send", label: t("sms.tabManual"), icon: <Send className="h-4 w-4" /> },
+    { id: "reports", label: "Reports Center", icon: <FileText className="h-4 w-4" /> },
+    { id: "send", label: "Manual SMS", icon: <Send className="h-4 w-4" /> },
     { id: "farmers", label: "Farmers", icon: <Users className="h-4 w-4" />, defaultAction: fetchFarmers },
-    { id: "history", label: t("sms.tabHistory"), icon: <Clock className="h-4 w-4" /> },
+    { id: "history", label: "SMS History", icon: <Clock className="h-4 w-4" /> },
   ];
 
   return (
     <div className="space-y-8 p-4 md:p-10 max-w-7xl mx-auto min-h-screen">
       <div className="mb-10 text-center md:text-left">
         <h1 className="text-4xl md:text-5xl font-black text-[#3d1f0a] dark:text-[#f0fdf4] tracking-tight mb-2">
-          {t("reports.title")}
+          Reports Center
         </h1>
         <p className="text-lg text-[#6b4423]/60 dark:text-[#86efac]/60 max-w-2xl">
-          {t("reports.subtitle")}
+          View and download detailed agricultural reports and alerts
         </p>
       </div>
 
@@ -281,94 +431,143 @@ export default function SmsAlertsPage() {
       {/* ─── TAB: Reports ─── */}
       {activeTab === "reports" && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Standard Reports List */}
-            <div className="lg:col-span-2 space-y-4">
-              <h3 className="text-lg font-bold text-[#3d1f0a] dark:text-[#f0fdf4] flex items-center gap-2">
-                <FileText className="h-5 w-5 text-[#16a34a]" />
-                {t("reports.availableReports")}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { id: "disease_march", type: "disease", date: "March 2024", icon: AlertTriangle, color: "text-red-500" },
-                  { id: "market_weekly", type: "market", date: "Week 12, 2024", icon: BarChart3, color: "text-blue-500" },
-                  { id: "water_audit", type: "irrigation", date: "Kharif Season", icon: Droplets, color: "text-cyan-500" },
-                  { id: "yield_forecast", type: "market", date: "Q1 Projections", icon: TrendingUp, color: "text-emerald-500" }
-                ].map((report) => (
-                  <Card key={report.id} className="overflow-hidden hover:shadow-md transition-shadow group">
-                    <CardContent className="p-0">
-                      <div className="p-5 flex items-start justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className={`p-3 rounded-xl bg-[#16a34a]/10 dark:bg-[#16a34a]/20 ${report.color}`}>
-                            <report.icon className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-[#3d1f0a] dark:text-[#f0fdf4]">{t(`reports.type.${report.type}`)}</p>
-                            <p className="text-xs text-[#6b4423]/60 dark:text-[#86efac]/60">{report.date}</p>
-                          </div>
-                        </div>
-                        <Button 
-                          onClick={() => handleDownload(report.id)}
-                          disabled={!!downloading}
-                          size="icon"
-                          className="rounded-full bg-[#16a34a] hover:bg-[#15803d]"
-                        >
-                          {downloading === report.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                      <div className="h-1 bg-[#16a34a]/5 group-hover:bg-[#16a34a]/20 transition-colors" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom Report Generator */}
-            <Card className="h-fit sticky top-6 border-[#16a34a]/20 bg-[#16a34a]/5 dark:bg-[#16a34a]/10">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-md font-black dark:text-[#f0fdf4] flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-[#16a34a]" />
-                  {t("reports.customReport")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-[#6b4423]/60 dark:text-[#86efac]/60">{t("reports.selectType")}</label>
-                  <Select value={reportType} onValueChange={setReportType}>
-                    <SelectTrigger className="bg-white/80 dark:bg-black/20"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="disease">{t("reports.type.disease")}</SelectItem>
-                      <SelectItem value="market">{t("reports.type.market")}</SelectItem>
-                      <SelectItem value="irrigation">{t("reports.type.irrigation")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-[#6b4423]/60 dark:text-[#86efac]/60">{t("reports.selectRange")}</label>
-                  <Select value={reportRange} onValueChange={setReportRange}>
-                    <SelectTrigger className="bg-white/80 dark:bg-black/20"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="last7">{t("reports.last7Days")}</SelectItem>
-                      <SelectItem value="last30">{t("reports.last30Days")}</SelectItem>
-                      <SelectItem value="season">{t("reports.fullSeason")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button 
-                  onClick={() => handleDownload("custom_report")} 
-                  disabled={!!downloading} 
-                  className="w-full bg-[#16a34a] hover:bg-[#15803d] text-white py-6 rounded-xl font-bold transition-all hover:scale-[1.02] shadow-lg shadow-[#16a34a]/20"
-                >
-                  {downloading === "custom_report" ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t("reports.downloading")}</>
-                  ) : (
-                    <><Download className="h-4 w-4 mr-2" />{t("reports.generateBtn")}</>
-                  )}
-                </Button>
-                <div className="pt-2">
-                    <p className="text-[10px] text-center text-[#6b4423]/40 dark:text-[#86efac]/40 leading-relaxed italic">
-                        * Reports are generated using real-time field data and AI analytics.
+          <div className="max-w-4xl mx-auto">
+            {/* Main Farm Parameters Container */}
+            <Card className="h-fit border-[#16a34a]/30 bg-gradient-to-b from-white to-[#16a34a]/5 dark:from-[#052e16]/80 dark:to-black backdrop-blur-xl shadow-2xl shadow-[#16a34a]/10 rounded-2xl overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#16a34a] via-emerald-400 to-[#16a34a]"></div>
+              <CardHeader className="pb-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-2xl font-black text-[#16a34a] dark:text-emerald-400 flex items-center gap-2">
+                      <Sprout className="h-6 w-6" />
+                      Farm Parameters
+                    </CardTitle>
+                    <p className="text-sm font-medium text-[#6b4423]/70 dark:text-[#86efac]/70 mt-1.5">
+                      Enter your farm details manually or use high-precision GPS detection.
                     </p>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={handleGpsClick} 
+                    disabled={findingLocation}
+                    className={`h-12 text-sm font-bold rounded-xl px-6 border shadow-sm transition-all ${gpsActive ? "border-emerald-500 bg-emerald-500 text-white dark:bg-emerald-600 dark:text-white shadow-emerald-500/20" : "border-[#16a34a]/40 bg-white text-[#16a34a] hover:bg-[#16a34a] hover:text-white dark:bg-transparent dark:text-emerald-400 dark:hover:bg-emerald-500/20"}`}
+                  >
+                    {findingLocation ? (
+                      <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Locating...</>
+                    ) : (
+                      <><MapPin className={`h-5 w-5 mr-2 ${gpsActive ? 'fill-white' : ''}`} /> {gpsActive ? 'GPS Locked' : '📍 Detect My Location'}</>
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Location Area */}
+                  <div className="col-span-1 md:col-span-2 space-y-4 bg-[#16a34a]/5 dark:bg-[#16a34a]/10 rounded-2xl p-6 border border-[#16a34a]/10">
+                    <h3 className="text-xs font-black text-[#16a34a] dark:text-emerald-400 flex items-center gap-2 uppercase tracking-widest">
+                      <MapPin className="h-4 w-4" /> Location Details
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#6b4423]/70 dark:text-[#86efac]/70">State</label>
+                        <Select value={repState} onValueChange={(val) => { setRepState(val); setRepDistrict(availableStates[val][0]); setRepLocalArea((availableAreas[availableStates[val][0]] || ["Rural"])[0]); setGpsActive(false); }}>
+                          <SelectTrigger className="h-12 rounded-xl bg-white dark:bg-black/40 border-[#16a34a]/30 font-bold text-[#3d1f0a] dark:text-emerald-50"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.keys(availableStates).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#6b4423]/70 dark:text-[#86efac]/70">District</label>
+                        <Select value={repDistrict} onValueChange={(val) => { setRepDistrict(val); setRepLocalArea((availableAreas[val] || ["Rural"])[0]); setGpsActive(false); }}>
+                          <SelectTrigger className="h-12 rounded-xl bg-white dark:bg-black/40 border-[#16a34a]/30 font-bold text-[#3d1f0a] dark:text-emerald-50"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {(availableStates[repState] || []).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#6b4423]/70 dark:text-[#86efac]/70">Local Area</label>
+                        <Select value={repLocalArea} onValueChange={(val) => { setRepLocalArea(val); setGpsActive(false); }}>
+                          <SelectTrigger className="h-12 rounded-xl bg-white dark:bg-black/40 border-[#16a34a]/30 font-bold text-[#3d1f0a] dark:text-emerald-50"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {(availableAreas[repDistrict] || ["Rural", "Urban"]).map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Crop & Season */}
+                  <div className="space-y-2 bg-[#16a34a]/5 dark:bg-[#16a34a]/10 rounded-2xl p-5 border border-[#16a34a]/10">
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-[#16a34a] dark:text-emerald-400">Agricultural Season</label>
+                    <Select value={repSeason} onValueChange={(val) => { setRepSeason(val); setRepCrop(cropsBySeason[val][0]); }}>
+                      <SelectTrigger className="h-12 rounded-xl bg-white dark:bg-black/40 border-[#16a34a]/30 font-bold"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(cropsBySeason).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 bg-[#16a34a]/5 dark:bg-[#16a34a]/10 rounded-2xl p-5 border border-[#16a34a]/10">
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-[#16a34a] dark:text-emerald-400">Main Crop Type</label>
+                    <Select value={repCrop} onValueChange={setRepCrop}>
+                      <SelectTrigger className="h-12 rounded-xl bg-white dark:bg-black/40 border-[#16a34a]/30 font-bold"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {cropsBySeason[repSeason].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Language */}
+                  <div className="col-span-1 md:col-span-2 space-y-3 pt-2">
+                    <label className="text-xs font-black uppercase text-[#16a34a] dark:text-emerald-400 flex items-center gap-1.5 ml-1"><Globe className="h-4 w-4" /> Report Language Preference</label>
+                    <Select value={repLang} onValueChange={setRepLang}>
+                      <SelectTrigger className="h-14 bg-white/80 dark:bg-[#16a34a]/20 border-[#16a34a]/30 w-full md:max-w-xs font-bold rounded-2xl shadow-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent className="rounded-2xl">
+                        <SelectItem value="en">English (default)</SelectItem>
+                        <SelectItem value="hi">हिंदी (Hindi)</SelectItem>
+                        <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
+                        <SelectItem value="or">ଓଡ଼ିଆ (Odia)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Generate Smart Report Section */}
+                <div className="pt-8 border-t border-[#16a34a]/10">
+                  <div className="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-600/20 dark:to-transparent rounded-3xl p-8 border border-emerald-500/30 relative overflow-hidden group">
+                    <div className="absolute -right-8 -bottom-8 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                      <FileSpreadsheet className="h-48 w-48 text-emerald-600" />
+                    </div>
+                    
+                    <div className="relative z-10 flex flex-col items-center text-center">
+                      <div className="p-4 rounded-full bg-emerald-500/20 mb-4">
+                        <Download className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <h3 className="text-xl font-black text-emerald-900 dark:text-emerald-300 mb-2">📥 Generate Smart Report</h3>
+                      <p className="text-sm font-medium text-emerald-800/70 dark:text-emerald-200/60 mb-8 max-w-md">
+                        Generate a complete AI-powered report based on your farm details including weather, market trends, and disease analysis.
+                      </p>
+                      
+                      <Button 
+                        onClick={() => handleDownload("custom_report")} 
+                        disabled={!!downloading} 
+                        className="w-full md:max-w-md h-16 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-2xl font-black text-lg transition-all hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-emerald-600/30"
+                      >
+                        {downloading === "custom_report" ? (
+                          <><Loader2 className="h-6 w-6 mr-3 animate-spin" /> Compiling Data...</>
+                        ) : (
+                          <><Download className="h-6 w-6 mr-3" /> Generate & Download Report</>
+                        )}
+                      </Button>
+                      
+                      <p className="text-[11px] font-bold text-emerald-700/40 dark:text-emerald-500/40 mt-6 uppercase tracking-widest italic">
+                        Real-time agricultural intelligence verified by ICAR & IMD
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -383,13 +582,13 @@ export default function SmsAlertsPage() {
             <CardHeader className="pb-3 border-b border-[#16a34a]/5 mb-4">
               <CardTitle className="text-md font-bold flex items-center gap-2 dark:text-[#f0fdf4]">
                 <Send className="h-4 w-4 text-[#16a34a]" />
-                {t("sms.sendManual")}
+                Send Manual SMS
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5 opacity-50">
-                  <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase">{t("sms.phoneCountry")}</label>
+                  <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase">{t("sms.phoneLabel")}</label>
                   <Input value={useBroadcast ? "BROADCAST TO DB" : sendPhone} onChange={(e) => setSendPhone(e.target.value)} disabled={useBroadcast} placeholder="+919876543210" className="rounded-xl border-[#16a34a]/20 font-mono" />
                 </div>
                 <div className="space-y-1.5 flex flex-col justify-end pb-1.5">
@@ -400,18 +599,7 @@ export default function SmsAlertsPage() {
                     <span className="text-sm font-bold text-[#3d1f0a] dark:text-[#f0fdf4]">Broadcast to Match (Crop+Region)</span>
                   </div>
                 </div>
-                <div className="space-y-1.5 hidden">
-                  <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase">{t("sms.priority")}</label>
-                  <Select value={sendPriority} onValueChange={(v) => setSendPriority(v as "Normal" | "High" | "Critical")}>
-                    <SelectTrigger className="rounded-xl border-[#16a34a]/20"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Normal">Normal</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
+                
                 {/* New Context Selectors */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-[#6b4423]/60 dark:text-[#86efac]/60 uppercase flex items-center gap-1">
@@ -799,4 +987,3 @@ function AlertLogCard({
     </div>
   );
 }
-

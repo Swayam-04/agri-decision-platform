@@ -4,7 +4,7 @@ import { generateDetailedAlert } from "@/lib/ai-engine";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { cropType, region, season } = body;
+    const { cropType, region, season, temperature, humidity, rainfall } = body;
     const lang = req.headers.get("x-language") || "en";
 
     if (!cropType || !region || !season) {
@@ -19,6 +19,9 @@ export async function POST(req: NextRequest) {
       region,
       season,
       language: lang,
+      temperature,
+      humidity,
+      rainfall,
     });
 
     return NextResponse.json({ rich, compact });
