@@ -53,11 +53,22 @@ export function useVoiceAssistant({ lang, onFinalTranscript, autoSpeak }) {
         const langPrefix = langCode.split("-")[0]?.toLowerCase?.() || "";
         
         // Find best matching voice
-        let voice = voices.find(v => v.lang === langCode);
+        let voice = voices.find(v => v.lang === langCode || v.lang.replace('_', '-') === langCode);
         if (!voice) {
-          voice = voices.find(v => v.lang.startsWith(langPrefix));
+          voice = voices.find(v => v.lang.startsWith(langPrefix) || (langPrefix === 'or' && v.lang.startsWith('od')));
         }
         
+        // Browsers like Chrome Desktop often lack Odia/Bengali voices natively.
+        // Fallback to a reliable external TTS audio stream if no native voice is found.
+        if (!voice && (langPrefix === 'or' || langPrefix === 'bn' || langPrefix === 'hi')) {
+          // Chunk to avoid URL length limits; taking first 200 chars for a quick response
+          const shortText = cleaned.length > 200 ? cleaned.substring(0, 197) + "..." : cleaned;
+          const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(shortText)}&tl=${langPrefix}&client=tw-ob`;
+          const audio = new window.Audio(fallbackUrl);
+          audio.play().catch(e => console.error("Audio fallback failed:", e));
+          return;
+        }
+
         if (voice) {
           utter.voice = voice;
           utter.lang = voice.lang;

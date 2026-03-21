@@ -44,8 +44,7 @@ const navItems = [
   { href: "/profit-predict", labelKey: "nav.profitPrediction", icon: TrendingUp, descriptionKey: "navDesc.profitPrediction", description: "Yield & Revenue" },
   { href: "/price-forecast", labelKey: "nav.sellStore", icon: Store, descriptionKey: "navDesc.sellStore", description: "Price Forecast" },
   { href: "/risk-advisory", labelKey: "nav.cropAdvisory", icon: AlertTriangle, descriptionKey: "navDesc.cropAdvisory", description: "What NOT to Grow" },
-  { href: "/chatbot", labelKey: "nav.aiAssistant", icon: Bot, descriptionKey: "navDesc.aiAssistant", description: "Ask Anything" },
-  { href: "/voice-assistant", labelKey: "nav.voiceAssistant", icon: Mic, descriptionKey: "navDesc.voiceAssistant", description: "Multilingual Mic Chat" },
+  { href: "/assistant", labelKey: "nav.aiAssistant", icon: Bot, descriptionKey: "navDesc.aiAssistant", description: "Text & Voice AI" },
   { href: "/sms-alerts", labelKey: "nav.smsAlerts", icon: ClipboardList, descriptionKey: "reports.subtitle", description: "Farm Analysis Reports" },
   { href: "/irrigation", labelKey: "nav.smartIrrigation", icon: Droplets, descriptionKey: "navDesc.smartIrrigation", description: "Water & Pump Control" },
 ];
@@ -208,13 +207,13 @@ export function Sidebar() {
           {renderSection("nav.yieldMarket", navItems.slice(4, 7))}
 
           {/* AI Support Section */}
-          {renderSection("nav.aiSupport", navItems.slice(7, 9))}
+          {renderSection("nav.aiSupport", navItems.slice(7, 8))}
 
           {/* Alerts Section */}
-          {renderSection("dashboard.smsAlerts", navItems.slice(9, 10))}
+          {renderSection("dashboard.smsAlerts", navItems.slice(8, 9))}
 
           {/* Watering Section */}
-          {renderSection("nav.watering", navItems.slice(10))}
+          {renderSection("nav.watering", navItems.slice(9))}
         </nav>
 
         {/* Footer */}

@@ -12,70 +12,90 @@ import { Bug, Loader2, MapPin, ShieldAlert, AlertTriangle, History } from "lucid
 import { Progress } from "@/components/ui/progress";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCallback, useEffect } from "react";
-
-import { getLiveWeather } from "@/lib/weather-service";
-
-const REGION_COORDS: Record<string, { lat: number; lon: number }> = {
-  Punjab: { lat: 31.1471, lon: 75.3412 },
-  Haryana: { lat: 29.0588, lon: 76.0856 },
-  "Uttar Pradesh": { lat: 26.8467, lon: 80.9462 },
-  "Madhya Pradesh": { lat: 22.9734, lon: 78.6569 },
-  Rajasthan: { lat: 27.0238, lon: 74.2179 },
-  Maharashtra: { lat: 19.7515, lon: 75.7139 },
-  Gujarat: { lat: 22.2587, lon: 71.1924 },
-  Karnataka: { lat: 15.3173, lon: 75.7139 },
-  "Andhra Pradesh": { lat: 15.9129, lon: 79.7400 },
-  Telangana: { lat: 18.1124, lon: 79.0193 },
-  "Tamil Nadu": { lat: 11.1271, lon: 78.6569 },
-  "West Bengal": { lat: 22.9868, lon: 87.8550 },
-  Bihar: { lat: 25.0961, lon: 85.3131 },
-  Odisha: { lat: 20.9517, lon: 85.0985 },
-  Kerala: { lat: 10.8505, lon: 76.2711 },
-  Assam: { lat: 26.2006, lon: 92.9376 },
-  Jharkhand: { lat: 23.6102, lon: 85.2799 },
-  Chhattisgarh: { lat: 21.2787, lon: 81.8661 },
-  Uttarakhand: { lat: 30.0668, lon: 79.0193 },
-  "Himachal Pradesh": { lat: 31.1048, lon: 77.1734 },
-  "Jammu & Kashmir": { lat: 33.7782, lon: 76.5762 }
-};
+import { STATE_DISTRICTS, DISTRICT_COORDS, LOCATIONS, REGION_COORDS } from "@/lib/districts";
 
 export default function PestOutbreakPage() {
   const { t, language } = useTranslation();
   const [region, setRegion] = useState("Punjab");
+  const [district, setDistrict] = useState("Ludhiana");
+  const [localArea, setLocalArea] = useState("Mullanpur");
   const [season, setSeason] = useState("Kharif");
   const [temperature, setTemperature] = useState(30);
   const [humidity, setHumidity] = useState(72);
   const [rainfall, setRainfall] = useState(20);
   const [loading, setLoading] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [result, setResult] = useState<PestOutbreakResult | null>(null);
 
-  async function analyze(weather?: { temp: number; humidity: number; rainfall: number }) {
+  useEffect(() => {
+    detectLocation();
+  }, []);
+
+  const detectLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+       console.error("Geolocation not supported");
+       return;
+    }
     setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        setLoading(false);
+      },
+      (err) => {
+        console.error("GPS Error:", err);
+        setLoading(false);
+      }
+    );
+  }, []);
+
+  const analyze = useCallback(async (weather?: { temp: number; humidity: number; rainfall: number }) => {
+    setLoading(true);
+    setResult(null); // Clear previous result to show refreshing
     try {
-      const res = await fetch("/api/pest-outbreak", {
+      const resp = await fetch("/api/pest-outbreak", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({ 
           region, 
+          district,
+          localArea,
           season, 
           temperature: weather?.temp ?? temperature, 
           humidity: weather?.humidity ?? humidity, 
           recentRainfall: weather?.rainfall ?? rainfall 
         }),
       });
-      setResult(await res.json());
+      if (resp.ok) {
+        setResult(await resp.json());
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }
+  }, [region, district, localArea, season, temperature, humidity, rainfall, language]);
 
   const fetchWeatherForLocation = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Fetch live weather using unified service
-      const weather = await getLiveWeather(region);
+      // Priority: GPS > Local Area > District > State
+      const localCoords = LOCATIONS[region]?.[district]?.areas?.[localArea];
+      const distCoords = DISTRICT_COORDS[district];
+      const stateCoords = REGION_COORDS[region] || REGION_COORDS["Punjab"];
+      
+      const activeCoords = coords || localCoords || distCoords || stateCoords;
+      
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${activeCoords.lat}&longitude=${activeCoords.lon}&current=temperature_2m,relative_humidity_2m&daily=precipitation_sum&timezone=auto`;
+      const weatherRes = await fetch(weatherUrl, { cache: "no-store" });
+      if (!weatherRes.ok) throw new Error("Weather API failed");
+      const weatherData = await weatherRes.json();
+      
+      const weather = {
+        temp: weatherData.current.temperature_2m,
+        humidity: weatherData.current.relative_humidity_2m,
+        rainfall: weatherData.daily.precipitation_sum[0] || 0
+      };
       const current = {
         temp: weather.temp,
         humidity: weather.humidity,
@@ -94,11 +114,11 @@ export default function PestOutbreakPage() {
     } finally {
       setLoading(false);
     }
-  }, [region, language, analyze]);
+  }, [region, district, localArea, coords, analyze]);
 
   useEffect(() => {
     fetchWeatherForLocation();
-  }, [region, fetchWeatherForLocation]);
+  }, [region, district, localArea, coords, fetchWeatherForLocation]);
 
   const zoneColors: Record<string, string> = {
     Low: "bg-emerald-100 text-emerald-700",
@@ -120,10 +140,56 @@ export default function PestOutbreakPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-1.5 col-span-1">
               <label className="text-xs font-medium text-muted-foreground">{t("advisory.regionLabel")}</label>
-              <Select value={region} onValueChange={setRegion}>
+              <Select value={region} onValueChange={(val) => { 
+                setRegion(val); 
+                setCoords(null);
+                const firstDist = STATE_DISTRICTS[val]?.[0] || "";
+                setDistrict(firstDist);
+                const firstArea = Object.keys(LOCATIONS[val]?.[firstDist]?.areas || {})[0] || "";
+                setLocalArea(firstArea);
+              }}>
                 <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>{REGION_LIST.map((r) => <SelectItem key={r} value={r}>{t(`regions.${r}`)}</SelectItem>)}</SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5 col-span-1">
+              <label className="text-xs font-medium text-muted-foreground">District</label>
+              <Select value={district} onValueChange={(val) => { 
+                setDistrict(val); 
+                setCoords(null);
+                const firstArea = Object.keys(LOCATIONS[region]?.[val]?.areas || {})[0] || "";
+                setLocalArea(firstArea);
+              }}>
+                <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select district" /></SelectTrigger>
+                <SelectContent>
+                  {(STATE_DISTRICTS[region] || []).map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5 col-span-1">
+              <label className="text-xs font-medium text-muted-foreground">Local Area</label>
+              <Select value={localArea} onValueChange={(val) => { setLocalArea(val); setCoords(null); }}>
+                <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select area" /></SelectTrigger>
+                <SelectContent>
+                  {Object.keys(LOCATIONS[region]?.[district]?.areas || {}).map((area) => (
+                    <SelectItem key={area} value={area}>{area}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end pb-1 gap-1">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={detectLocation} 
+                className={`rounded-xl border-orange-200 hover:bg-orange-50 ${coords ? 'bg-orange-100 border-orange-400 text-orange-700' : 'text-muted-foreground'}`}
+                title="Use My GPS Location"
+              >
+                <MapPin className={`h-4 w-4 ${coords ? 'fill-orange-500' : ''}`} />
+              </Button>
+              {coords && <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-[10px] py-0 px-2 h-10 flex items-center">GPS Active</Badge>}
             </div>
             <div className="space-y-1.5 col-span-1">
               <label className="text-xs font-medium text-muted-foreground">{t("advisory.seasonLabel")}</label>
@@ -148,7 +214,12 @@ export default function PestOutbreakPage() {
             </div>
           </div>
           <div className="flex justify-between items-center">
-             <p className="text-xs text-muted-foreground italic">Current conditions synced from real-time weather stations.</p>
+             <p className="text-xs text-muted-foreground italic">
+               {coords ? "Showing weather for precise GPS coordinates" : 
+                LOCATIONS[region]?.[district]?.areas?.[localArea] ? `Showing weather for selected local area (${localArea})` :
+                DISTRICT_COORDS[district] ? "Showing district-level data (fallback)" :
+                `Showing state-level data for ${region} (fallback)`}
+             </p>
              <Button onClick={fetchWeatherForLocation} disabled={loading} className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl h-12 px-8 font-bold shadow-lg shadow-orange-600/20">
                {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Syncing...</> : "Refresh Data"}
              </Button>

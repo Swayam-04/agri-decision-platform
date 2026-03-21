@@ -174,6 +174,8 @@ export interface IrrigationResult {
 export interface PestOutbreakInput {
   language?: string;
   region: string;
+  district: string;
+  localArea: string;
   season: string;
   temperature: number;
   humidity: number;
