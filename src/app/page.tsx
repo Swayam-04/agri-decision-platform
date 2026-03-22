@@ -85,7 +85,7 @@ export default function DashboardPage() {
         fetch("/api/pest-outbreak", {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-language": language },
-          body: JSON.stringify({ region, season, temperature: temp, humidity, recentRainfall: rain }),
+          body: JSON.stringify({ region, district: "Ludhiana", localArea: "Mullanpur", season, temperature: temp, humidity, recentRainfall: rain }),
         }),
         fetch("/api/sms-alerts", {
           method: "POST",
@@ -268,13 +268,13 @@ export default function DashboardPage() {
                       {results.diseaseRisk.riskPercentage}%
                     </div>
                     <div className="text-[13px] text-[#6b4423]">
-                      {t("dashboard.nextDays").replace("{days}", results.diseaseRisk.forecastDays.toString())}
+                      {t("dashboard.nextDays").replace("{days}", (results.diseaseRisk.forecastDays || 7).toString())}
                     </div>
                   </div>
                   <div className="h-2.5 w-full bg-[#e8dcc8] rounded-full overflow-hidden">
                     <div className="h-full bg-[#16a34a] rounded-full transition-all duration-700" style={{ width: `${results.diseaseRisk.riskPercentage}%` }} />
                   </div>
-                  {results.diseaseRisk.topDiseases.slice(0, 2).map((d) => (
+                  {results.diseaseRisk.topDiseases?.slice(0, 2).map((d) => (
                     <div key={d.name} className="flex justify-between text-[13px] text-[#6b4423]">
                       <span>{d.name}</span><span className="font-bold text-[#3d1f0a]">{d.probability}%</span>
                     </div>
@@ -304,7 +304,7 @@ export default function DashboardPage() {
                     Rs {results.profit.profitPerAcre.toLocaleString("en-IN")}
                   </div>
                   <div className="text-[13px] text-[#6b4423]">
-                    {t("dashboard.perAcre")} · {t("dashboard.range")}: Rs {results.profit.profitRange.low.toLocaleString("en-IN")}–{results.profit.profitRange.high.toLocaleString("en-IN")}
+                    {t("dashboard.perAcre")} · {t("dashboard.range")}: Rs {results.profit.profitRange?.low.toLocaleString("en-IN")}–{results.profit.profitRange?.high.toLocaleString("en-IN")}
                   </div>
                   <Link href="/profit-predict" className="text-sm text-[#16a34a] hover:underline font-medium flex items-center gap-1 pt-1">
                     {t("dashboard.costBreakdown")} <ArrowRight className="h-3 w-3" />
@@ -332,7 +332,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2">
                     {results.priceForecast.decision === "Store" ? <CheckCircle2 className="h-5 w-5 text-[#16a34a]" /> : <XCircle className="h-5 w-5 text-[#b91c1c]" />}
                     <span className="text-sm font-semibold text-[#3d1f0a]">
-                      {results.priceForecast.decision === "Store" ? t("dashboard.storeDays").replace("{days}", results.priceForecast.storeDays.toString()) : t("dashboard.sellNow")}
+                      {results.priceForecast.decision === "Store" ? t("dashboard.storeDays").replace("{days}", (results.priceForecast.storeDays || 0).toString()) : t("dashboard.sellNow")}
                     </span>
                   </div>
                   <div className="text-[13px] text-[#6b4423]">
@@ -415,7 +415,7 @@ export default function DashboardPage() {
                   <div className="h-2.5 w-full bg-[#e8dcc8] rounded-full overflow-hidden">
                     <div className="h-full bg-[#16a34a] rounded-full transition-all duration-700" style={{ width: `${results.pestOutbreak.outbreakProbability}%` }} />
                   </div>
-                  {results.pestOutbreak.affectedCrops.slice(0, 2).map((c, i) => (
+                  {results.pestOutbreak.affectedCrops?.slice(0, 2).map((c, i) => (
                     <div key={i} className="flex justify-between text-[13px] text-[#6b4423]">
                       <span>{t(`crops.${c.crop}`)} ({c.pest})</span><span className="font-bold text-[#3d1f0a]">{c.riskPercent}%</span>
                     </div>
@@ -445,7 +445,7 @@ export default function DashboardPage() {
                     <span className="text-[#b91c1c] font-semibold">{results.smsAlerts.criticalCount} {t("dashboard.critical")}</span>
                     <span> {t("dashboard.alertsTriggered")}</span>
                   </div>
-                  {results.smsAlerts.alerts.slice(0, 2).map((a) => (
+                  {results.smsAlerts.alerts?.slice(0, 2).map((a) => (
                     <div key={a.id} className="text-[13px] bg-[#faf4e8] rounded-[16px] p-3 border border-[rgba(61,31,10,0.1)]">
                       <Badge className={`text-[9px] mb-1 ${a.priority === "Critical" ? "bg-[#b91c1c]/15 text-[#b91c1c]" : a.priority === "High" ? "bg-[#f59e0b]/20 text-[#6b4423]" : "bg-[#16a34a]/15 text-[#16a34a]"}`}>
                         {a.priority === "Critical" ? t("price.riskHigh") : a.priority === "High" ? t("price.riskMedium") : t("price.riskLow")}
@@ -472,7 +472,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {results.advisory.cropsToAvoid.slice(0, 4).map((crop) => (
+                  {results.advisory.cropsToAvoid?.slice(0, 4).map((crop) => (
                     <div key={crop.cropName} className="flex items-center justify-between text-xs bg-[#faf4e8] rounded-[16px] p-2.5 border border-[rgba(185,28,28,0.2)]">
                       <div className="flex items-center gap-1.5">
                         <XCircle className="h-3.5 w-3.5 text-[#b91c1c]" />
