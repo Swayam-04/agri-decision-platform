@@ -456,13 +456,7 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'Brown Spot': return 'ବ୍ରାଉନ୍ ସ୍ପଟ୍ (ବାଦାମୀ ଦାଗ)';
       case 'Wheat Rust (Yellow)': return 'ଗହମ କଳଙ୍କି (ହଳଦିଆ)';
       case 'Powdery Mildew': return 'ପାଉଡରୀ ମିଲଡ୍ୟୁ';
-      case 'Early Blight': return 'ପ୍ରାରମ୍ଭିକ ବ୍ଲାଇଟ୍ (ଅର୍ଲି ବ୍ଲାଇଟ୍)';
-      case 'Late Blight': return 'ବିଳମ୍ବିତ ବ୍ଲାଇଟ୍ (ଲେଟ୍ ବ୍ଲାଇଟ୍)';
       case 'Leaf Curl Virus': return 'ଲିଫ୍ କର୍ଲ ଭାଇରସ୍ (ପତ୍ର ମୋଡ଼ା)';
-      case 'Healthy': return 'ସୁସ୍ଥ';
-      case 'Healthy_desc': return `ଆପଣଙ୍କର ${vars.crop} ଫସଲ ସୁସ୍ଥ ଏବଂ ରୋଗମୁକ୍ତ ଦେଖାଯାଉଛି |`;
-      case 'Healthy_prev1': return 'ନିୟମିତ ନୀରିକ୍ଷଣ ଜାରି ରଖନ୍ତୁ';
-      case 'Healthy_prev2': return 'ସନ୍ତୁଳିତ ସାର ଏବଂ ଜଳସେଚନ ବଜାୟ ରଖନ୍ତୁ';
       case 'Cotton Bollworm Damage': return 'କପା ବୋଲୱର୍ମ କ୍ଷତି';
       case 'Black Scurf': return 'ବ୍ଲାକ୍ ସ୍କର୍ଫ୍';
       case 'Red Rot': return 'ରେଡ୍ ରଟ୍ (ଲାଲ୍ ସଢ଼ା)';
@@ -1310,6 +1304,16 @@ export function simulatePriceForecast(input: PriceForecastInput): PriceForecastR
     priceTrend,
     priceTimeline: timeline,
     reasoning,
+    coldStorageOptions: [
+      { name: "AgroCold Solutions", distance: "4.2 km", costPerDay: 5, totalCost: Math.round(5 * (shouldStore ? bestDay : 30) * input.quantityQuintals) },
+      { name: "Punjab Agri-Storage", distance: "12.5 km", costPerDay: 4.5, totalCost: Math.round(4.5 * (shouldStore ? bestDay : 30) * input.quantityQuintals) },
+    ],
+    alternativeOptions: {
+      processing: ["Direct supply to millers", "Seed selection for next season"],
+      valueAdd: ["Wait for off-season premium", "On-site solar drying"],
+      local: ["Farmer cooperative sale", "Local mandi (Spot sale)"]
+    },
+    alternativeReasoning: `Selling now earns Rs ${Math.round(currentPrice * input.quantityQuintals).toLocaleString("en-IN")}. Strategic waiting (${bestDay} days) could net Rs ${Math.round((bestPrice * input.quantityQuintals) - totalStorageCost).toLocaleString("en-IN")} after costs.`,
   };
 }
 

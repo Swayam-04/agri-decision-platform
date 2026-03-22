@@ -1,7 +1,7 @@
 function checkIsPlantLeaf(greenRatio, skinRatio) {
     // Logic from page.tsx:
-    // const isLeaf = greenRatio > 0.15 && skinRatio < 0.25;
-    return greenRatio > 0.15 && skinRatio < 0.25;
+    // const isLeaf = greenRatio > 0.15 && skinRatio < 0.15;
+    return greenRatio > 0.15 && skinRatio < 0.15;
 }
 
 const tests = [

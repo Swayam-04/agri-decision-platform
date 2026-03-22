@@ -121,8 +121,8 @@ export default function DiseaseDetectPage() {
         
         // Stricter requirements:
         // 1. Must have at least 15% green (raised from 1%)
-        // 2. Skin pixels must not dominate the image
-        const isLeaf = greenRatio > 0.15 && skinRatio < 0.25;
+        // 2. Skin pixels must not exceed 15% (lowered from 25%)
+        const isLeaf = greenRatio > 0.15 && skinRatio < 0.15;
         const confidence = Math.min(99, Math.round(greenRatio * 200) + 20);
         
         resolve({ isLeaf, confidence });

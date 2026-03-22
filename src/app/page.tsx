@@ -338,6 +338,30 @@ export default function DashboardPage() {
                   <div className="text-[13px] text-[#6b4423]">
                     {t("dashboard.trend")}: {results.priceForecast.priceTrend === "Rising" ? t("price.rising") : results.priceForecast.priceTrend === "Falling" ? t("price.falling") : t("price.stable")} · {results.priceForecast.expectedGainLoss >= 0 ? t("dashboard.gain") : t("dashboard.loss")}: Rs {Math.abs(results.priceForecast.expectedGainLoss).toLocaleString("en-IN")}
                   </div>
+                  
+                  {/* Strategic Comparison */}
+                  <div className="pt-2 border-t border-[rgba(61,31,10,0.1)] space-y-2">
+                    <p className="text-[11px] font-bold text-[#16a34a] uppercase tracking-wider">{t("price.strategicSelling") || "Strategic Selling"}</p>
+                    <p className="text-[12px] text-[#6b4423] leading-relaxed italic border-l-2 border-[#16a34a]/30 pl-2">
+                      {results.priceForecast.alternativeReasoning}
+                    </p>
+                    
+                    {results.priceForecast.decision === "Store" && results.priceForecast.coldStorageOptions && (
+                      <div className="space-y-1.5 mt-2">
+                         <p className="text-[11px] font-bold text-[#3d1f0a]">{t("price.nearbyStorage") || "Nearby Cold Storage"}</p>
+                         {results.priceForecast.coldStorageOptions.slice(0, 2).map((option, idx) => (
+                           <div key={idx} className="flex justify-between items-center text-[12px] bg-[#faf4e8] p-1.5 rounded-lg border border-[rgba(61,31,10,0.05)]">
+                             <div className="flex flex-col">
+                               <span className="font-semibold text-[#3d1f0a]">{option.name}</span>
+                               <span className="text-[10px] text-muted-foreground">{option.distance} · Rs {option.costPerDay}/q/day</span>
+                             </div>
+                             <div className="text-[#16a34a] font-bold">Rs {option.totalCost.toLocaleString("en-IN")}</div>
+                           </div>
+                         ))}
+                      </div>
+                    )}
+                  </div>
+
                   <Link href="/price-forecast" className="text-sm text-[#16a34a] hover:underline font-medium flex items-center gap-1 pt-1">
                     {t("dashboard.priceTimeline")} <ArrowRight className="h-3 w-3" />
                   </Link>
@@ -488,6 +512,34 @@ export default function DashboardPage() {
                     {results.advisory.safeCrops.map((c) => (
                       <Badge key={c.name} className="text-[10px] bg-[#16a34a]/15 text-[#16a34a] border-[#16a34a]/30">{t(`crops.${c.name}`)}</Badge>
                     ))}
+                  </div>
+                )}
+                
+                {/* Intercropping Section */}
+                {results.advisory.recommendedCombinations && results.advisory.recommendedCombinations.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-[rgba(61,31,10,0.1)] space-y-3">
+                    <p className="text-[12px] font-bold text-[#3d1f0a] border-l-3 border-[#16a34a] pl-2 uppercase tracking-wide">
+                      {t("advisory.smartIntercropping") || "Smart Intercropping Strategy"}
+                    </p>
+                    <div className="grid grid-cols-1 gap-3">
+                      {results.advisory.recommendedCombinations.map((combo, idx) => (
+                        <div key={idx} className="bg-[#faf4e8] p-3 rounded-2xl border border-[rgba(22,163,74,0.15)] relative overflow-hidden group hover:border-[#16a34a]/40 transition-all">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              {combo.crops.map((c, i) => (
+                                <span key={i} className="flex items-center gap-1 bg-white px-2 py-1 rounded-full text-[11px] font-bold text-[#3d1f0a] shadow-sm">
+                                  {t(`crops.${c}`)}
+                                </span>
+                              ))}
+                            </div>
+                            <Badge className="bg-[#16a34a] text-white text-[10px]">+{combo.profitBoost}% {t("dashboard.profit")}</Badge>
+                          </div>
+                          <p className="text-[12px] text-[#6b4423] leading-relaxed italic">
+                            {combo.reason}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </CardContent>
