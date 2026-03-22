@@ -202,7 +202,7 @@ export default function DiseaseRiskPage() {
 
     } catch (err) {
       console.error(err);
-      setWeatherError("Failed to fetch live weather data. Please try again.");
+      setWeatherError("⚠️ Live weather unavailable. Using estimated data.");
     } finally {
       setLoading(false);
     }
