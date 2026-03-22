@@ -470,6 +470,18 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
       case 'Fall Armyworm': return 'ଫଲ୍ ଆର୍ମିୱର୍ମ';
       case 'Soybean Rust': return 'ସୋୟାବିନ୍ ରଷ୍ଟ୍';
       case 'Tikka Disease (Leaf Spot)': return 'ଟିକ୍କା ରୋଗ (ପତ୍ର ଦାଗ)';
+      case 'Healthy': return 'ସୁସ୍ଥ (Healthy)';
+      case 'Healthy_desc': return `ଆପଣଙ୍କର ${vars.crop} ଫସଲ ସୁସ୍ଥ ଏବଂ ରୋଗମୁକ୍ତ ଦେଖାଯାଉଛି |`;
+      case 'Healthy_prev1': return 'ନିୟମିତ ନୀରିକ୍ଷଣ ଜାରି ରଖନ୍ତୁ';
+      case 'Healthy_prev2': return 'ସନ୍ତୁଳିତ ସାର ଏବଂ ଜଳସେଚନ ବଜାୟ ରଖନ୍ତୁ';
+      case 'Healthy_prev3': return 'କ୍ଷେତକୁ ସଫା ଏବଂ ଘାସମୁକ୍ତ ରଖନ୍ତୁ';
+      case 'Healthy_prev4': return 'ଜୈବିକ ସାର ବ୍ୟବହାର କରନ୍ତୁ';
+      case 'Healthy_prev5': return 'ଦୈନିକ ଅଭିବୃଦ୍ଧି ଉପରେ ନଜର ରଖନ୍ତୁ';
+      case 'preventive.healthy.1': return 'ନିୟମିତ ନୀରିକ୍ଷଣ ଜାରି ରଖନ୍ତୁ';
+      case 'preventive.healthy.2': return 'ସନ୍ତୁଳିତ ସାର ଏବଂ ଜଳସେଚନ ବଜାୟ ରଖନ୍ତୁ';
+      case 'preventive.healthy.3': return 'କ୍ଷେତକୁ ସଫା ଏବଂ ଘାସମୁକ୍ତ ରଖନ୍ତୁ';
+      case 'preventive.healthy.4': return 'ଜୈବିକ ସାର ବ୍ୟବହାର କରନ୍ତୁ';
+      case 'preventive.healthy.5': return 'ଦୈନିକ ଅଭିବୃଦ୍ଧି ଉପରେ ନଜର ରଖନ୍ତୁ';
       // Cost Breakdown
       case 'Seeds & Seedlings': return 'ବିହନ ଏବଂ ଚାରା';
       case 'Fertilizers': return 'ସାର';
@@ -749,6 +761,18 @@ function tLocale(lang: string | undefined, templateId: string, vars: Record<stri
     case 'sms_smart_disease': return `🌾 Alert: ${vars.riskLevel} ${vars.disease} risk (${vars.risk}%) in ${vars.region} for ${vars.crop}. Spray within 48h. - CropIntel AI`;
     case 'sms_smart_pest': return `🐛 High ${vars.pest} risk for ${vars.crop} in ${vars.region}. Due to current humidity and rainfall. Apply pest control measures immediately.`;
     case 'sms_smart_weather': return `🌾 Alert: ${vars.region} (${vars.season}): ${vars.insight} - CropIntel AI`;
+    case 'Healthy': return 'Healthy';
+    case 'Healthy_desc': return `Your ${vars.crop} crop appears healthy and disease-free.`;
+    case 'Healthy_prev1': return 'Continue regular monitoring';
+    case 'Healthy_prev2': return 'Maintain balanced fertilization and irrigation';
+    case 'Healthy_prev3': return 'Keep field clean and weed-free';
+    case 'Healthy_prev4': return 'Use organic soil health boosters';
+    case 'Healthy_prev5': return 'Record daily growth observations';
+    case 'preventive.healthy.1': return 'Continue regular monitoring';
+    case 'preventive.healthy.2': return 'Maintain balanced fertilization and irrigation';
+    case 'preventive.healthy.3': return 'Keep field clean and weed-free';
+    case 'preventive.healthy.4': return 'Use organic soil health boosters';
+    case 'preventive.healthy.5': return 'Record daily growth observations';
     default: return templateId;
   }
 }

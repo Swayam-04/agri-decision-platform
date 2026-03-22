@@ -96,6 +96,7 @@ export default function DiseaseDetectPage() {
         const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
         
         let greenPixels = 0;
+        let skinPixels = 0;
         const totalPixels = data.length / 4;
         
         for (let i = 0; i < data.length; i += 4) {
@@ -103,15 +104,27 @@ export default function DiseaseDetectPage() {
           const g = data[i + 1];
           const b = data[i + 2];
           
-          if (g > r * 0.8 && g > b * 1.2 && g > 40) {
+          // Relaxed Green detection (Typical for leaves)
+          if (g > r * 0.9 && g > b * 1.1 && g > 30) {
             greenPixels++;
+          }
+          
+          // Skin tone detection (Typical for human faces/hands)
+          // High R, moderate G, lower B (R > G > B)
+          if (r > 60 && g > 40 && b > 20 && r > g && g > b && (r - g) > 10) {
+            skinPixels++;
           }
         }
         
         const greenRatio = greenPixels / totalPixels;
-        const confidence = Math.min(99, Math.round(greenRatio * 1000) + 40);
+        const skinRatio = skinPixels / totalPixels;
         
-        const isLeaf = greenRatio > 0.01;
+        // Stricter requirements:
+        // 1. Must have at least 15% green (raised from 1%)
+        // 2. Skin pixels must not dominate the image
+        const isLeaf = greenRatio > 0.15 && skinRatio < 0.25;
+        const confidence = Math.min(99, Math.round(greenRatio * 200) + 20);
+        
         resolve({ isLeaf, confidence });
       };
       img.onerror = () => resolve({ isLeaf: true, confidence: 100 });
