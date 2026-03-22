@@ -336,7 +336,10 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div className="text-[13px] text-[#6b4423]">
-                    {t("dashboard.trend")}: {results.priceForecast.priceTrend === "Rising" ? t("price.rising") : results.priceForecast.priceTrend === "Falling" ? t("price.falling") : t("price.stable")} · {results.priceForecast.expectedGainLoss >= 0 ? t("dashboard.gain") : t("dashboard.loss")}: Rs {Math.abs(results.priceForecast.expectedGainLoss).toLocaleString("en-IN")}
+                    {t("dashboard.trend")}: {results.priceForecast.priceTrend === "Rising" ? t("price.rising") : results.priceForecast.priceTrend === "Falling" ? t("price.falling") : t("price.stable")} · 
+                    <span className={results.priceForecast.expectedGainLoss >= 0 ? "text-[#16a34a] font-bold" : "text-[#b91c1c] font-bold"}>
+                      {results.priceForecast.expectedGainLoss >= 0 ? ` +Rs ${results.priceForecast.expectedGainLoss.toLocaleString("en-IN")}` : ` -Rs ${Math.abs(results.priceForecast.expectedGainLoss).toLocaleString("en-IN")}`}
+                    </span>
                   </div>
                   
                   {/* Strategic Comparison */}

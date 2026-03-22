@@ -143,13 +143,13 @@ export default function DiseaseDetectPage() {
     
     if (!isLeaf) {
       setLoading(false);
-      setError(`${t("detect.invalidImageTitle")}\n${t("detect.invalidImageDesc")}`);
+      setError("Please upload a valid plant leaf image");
       return;
     }
     
-    if (confidence < 70) {
+    if (confidence < 60) {
       setLoading(false);
-      setError(`${t("detect.invalidImageTitle")}\n${t("detect.invalidImageRetake") || "Invalid image – retake photo"}`);
+      setError("Uncertain result – Please retake image");
       return;
     }
 
@@ -305,6 +305,12 @@ export default function DiseaseDetectPage() {
             </Button>
 
             {/* Demo helper removed */}
+            {error && (
+              <div className="mt-4 bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                <span className="text-sm font-bold">{error}</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 

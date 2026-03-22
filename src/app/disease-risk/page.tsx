@@ -56,6 +56,10 @@ export default function DiseaseRiskPage() {
   const [forecast7Days, setForecast7Days] = useState<ForecastDay[]>([]);
   const [locationUsed, setLocationUsed] = useState<string>("");
   const [weatherError, setWeatherError] = useState<string>("");
+  const [isManual, setIsManual] = useState(false);
+  const [manualTemp, setManualTemp] = useState("25");
+  const [manualHum, setManualHum] = useState("65");
+  const [manualRain, setManualRain] = useState("0");
 
   // Current Weather State
   const [temperature, setTemperature] = useState<number>(30);
@@ -89,65 +93,90 @@ export default function DiseaseRiskPage() {
     setForecast7Days([]);
     
     try {
-      // 1. Fetch live weather using unified service
-      const weather = await getLiveWeather(region);
-      setTemperature(weather.temp);
-      setHumidity(weather.humidity);
-      setRainfall(weather.rainfall);
-
-      // 2. Fetch daily forecast separately for the chart (Keep Open-Meteo for this)
-      const coords = REGION_COORDS[region] || REGION_COORDS["Punjab"];
-      setLocationUsed(t(`regions.${region}`) || region);
-      
+      let tempValue = 25, humValue = 65, rainValue = 0;
       let days: ForecastDay[] = [];
-      try {
-        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,relative_humidity_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&hourly=relative_humidity_2m&timezone=auto`;
+
+      if (isManual) {
+        tempValue = parseFloat(manualTemp) || 25;
+        humValue = parseFloat(manualHum) || 65;
+        rainValue = parseFloat(manualRain) || 0;
         
-        const weatherRes = await fetch(weatherUrl, { cache: "no-store" });
-        if (!weatherRes.ok) throw new Error("Weather API failed");
-        
-        const weatherData = await weatherRes.json();
-        const hourlyHum = weatherData.hourly.relative_humidity_2m;
-        
+        // Rule-based daily projection (Senior Spec)
         for (let i = 0; i < 7; i++) {
-          const startIdx = i * 24;
-          const endIdx = startIdx + 24;
-          const dayHumidities = hourlyHum.slice(startIdx, endIdx);
-          const avgHum = dayHumidities.reduce((a: number, b: number) => a + b, 0) / 24;
-          const avgTemp = (weatherData.daily.temperature_2m_max[i] + weatherData.daily.temperature_2m_min[i]) / 2;
-          const rainfall = (i === 0 && weatherData.current?.precipitation > 0) 
-            ? weatherData.current.precipitation 
-            : weatherData.daily.precipitation_sum[i];
-          
-          const { level, percent } = calculateRisk(avgHum, rainfall);
           const date = new Date();
           date.setDate(date.getDate() + i);
+          const { level, percent } = calculateRisk(humValue, rainValue);
           days.push({
             date,
-            temp: Math.round(avgTemp),
-            humidity: Math.round(avgHum),
-            rainfall: Math.round(rainfall),
+            temp: Math.round(tempValue),
+            humidity: Math.round(humValue),
+            rainfall: Math.round(rainValue),
             riskLevel: level,
             riskPercentage: percent
           });
         }
-      } catch (e) {
-        console.warn("Forecast fetch failed, using realistic mock data", e);
-        // Fallback to 7 days of realistic mock data
-        for (let i = 0; i < 7; i++) {
-          const date = new Date();
-          date.setDate(date.getDate() + i);
-          const { level, percent } = calculateRisk(70 + Math.random() * 10, 5 + Math.random() * 5);
-          days.push({
-            date,
-            temp: 28 + Math.round(Math.random() * 5),
-            humidity: 70 + Math.round(Math.random() * 15),
-            rainfall: Math.round(Math.random() * 10),
-            riskLevel: level,
-            riskPercentage: percent
-          });
+      } else {
+        try {
+          // 1. Fetch live weather using unified service
+          const weather = await getLiveWeather(region);
+          tempValue = weather.temp;
+          humValue = weather.humidity;
+          rainValue = weather.rainfall;
+
+          // 2. Fetch daily forecast
+          const coords = REGION_COORDS[region] || REGION_COORDS["Punjab"];
+          setLocationUsed(t(`regions.${region}`) || region);
+          
+          const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,relative_humidity_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&hourly=relative_humidity_2m&timezone=auto`;
+          
+          const weatherRes = await fetch(weatherUrl, { cache: "no-store" });
+          if (!weatherRes.ok) throw new Error("Weather API failed");
+          
+          const weatherData = await weatherRes.json();
+          const hourlyHum = weatherData.hourly.relative_humidity_2m;
+          
+          for (let i = 0; i < 7; i++) {
+            const startIdx = i * 24;
+            const dayHumidities = hourlyHum.slice(startIdx, startIdx + 24);
+            const avgHum = dayHumidities.reduce((a: number, b: number) => a + b, 0) / 24;
+            const avgTemp = (weatherData.daily.temperature_2m_max[i] + weatherData.daily.temperature_2m_min[i]) / 2;
+            const rainfall = (i === 0 && weatherData.current?.precipitation > 0) 
+              ? weatherData.current.precipitation 
+              : weatherData.daily.precipitation_sum[i];
+            
+            const { level, percent } = calculateRisk(avgHum, rainfall);
+            const date = new Date();
+            date.setDate(date.getDate() + i);
+            days.push({
+              date,
+              temp: Math.round(avgTemp),
+              humidity: Math.round(avgHum),
+              rainfall: Math.round(rainfall),
+              riskLevel: level,
+              riskPercentage: percent
+            });
+          }
+        } catch (apiErr) {
+          console.warn("API Fail, using fallback values:", apiErr);
+          setWeatherError("Weather API unavailable. Using fallback rule-based prediction. You can also enter data manually below.");
+          // Rule-based fallback (Senior Spec)
+          tempValue = 28; humValue = 70; rainValue = 5;
+          for (let i = 0; i < 7; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() + i);
+            const { level, percent } = calculateRisk(humValue, rainValue);
+            days.push({
+              date, temp: tempValue, humidity: humValue, rainfall: rainValue,
+              riskLevel: level, riskPercentage: percent
+            });
+          }
         }
       }
+
+      setTemperature(tempValue);
+      setHumidity(humValue);
+      setRainfall(rainValue);
+      setForecast7Days(days);
 
       setForecast7Days(days);
 
@@ -157,9 +186,9 @@ export default function DiseaseRiskPage() {
         headers: { "Content-Type": "application/json", "x-language": language },
         body: JSON.stringify({
           cropType, region, season,
-          temperature,
-          humidity,
-          rainfall,
+          temperature: tempValue,
+          humidity: humValue,
+          rainfall: rainValue,
         }),
       });
       const backendResult = await res.json();
@@ -262,8 +291,59 @@ export default function DiseaseRiskPage() {
               </Select>
             </div>
 
+            <div className="pt-4 border-t border-[rgba(61,31,10,0.1)]">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-[13px] font-bold text-[#3d1f0a] flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#16a34a]" />
+                  Manual Weather Bypass
+                </label>
+                <button 
+                  onClick={() => setIsManual(!isManual)}
+                  className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase transition-colors ${isManual ? "bg-[#16a34a] text-white shadow-sm" : "bg-[#e8dcc8] text-[#6b4423]"}`}
+                >
+                  {isManual ? "Manual ON" : "Manual OFF"}
+                </button>
+              </div>
+              
+              {isManual ? (
+                <div className="grid grid-cols-3 gap-2 animate-in fade-in slide-in-from-top-1">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-[#6b4423] font-bold uppercase">Temp °C</span>
+                    <input 
+                      type="number" 
+                      value={manualTemp} 
+                      onChange={(e) => setManualTemp(e.target.value)}
+                      className="w-full h-10 bg-white/50 border-2 border-[rgba(61,31,10,0.1)] rounded-xl text-center text-[13px] font-bold text-[#3d1f0a] focus:border-[#16a34a] outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-[#6b4423] font-bold uppercase">Hum %</span>
+                    <input 
+                      type="number" 
+                      value={manualHum} 
+                      onChange={(e) => setManualHum(e.target.value)}
+                      className="w-full h-10 bg-white/50 border-2 border-[rgba(61,31,10,0.1)] rounded-xl text-center text-[13px] font-bold text-[#3d1f0a] focus:border-[#16a34a] outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-[#6b4423] font-bold uppercase">Rain mm</span>
+                    <input 
+                      type="number" 
+                      value={manualRain} 
+                      onChange={(e) => setManualRain(e.target.value)}
+                      className="w-full h-10 bg-white/50 border-2 border-[rgba(61,31,10,0.1)] rounded-xl text-center text-[13px] font-bold text-[#3d1f0a] focus:border-[#16a34a] outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-[#6b4423] leading-tight">
+                   Using automated station data. Trigger <b>Manual ON</b> if the service is unavailable or inaccurate.
+                </p>
+              )}
+            </div>
+
             {weatherError && (
-              <div className="text-sm text-red-600 font-medium bg-red-50 p-3 rounded-xl border border-red-200">
+              <div className="text-[12px] text-red-600 font-medium bg-red-50 p-2 rounded-xl border border-red-200">
                 {weatherError}
               </div>
             )}

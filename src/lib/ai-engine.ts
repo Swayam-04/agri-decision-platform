@@ -1248,7 +1248,7 @@ export function simulatePriceForecast(input: PriceForecastInput): PriceForecastR
     timeline[30].price > currentPrice * 1.05 ? "Rising" :
     timeline[30].price < currentPrice * 0.95 ? "Falling" : "Stable";
 
-  const shouldStore = netGainLoss > 0 && spoilageRisk !== "High" && bestDay >= 3;
+  const shouldStore = netGainLoss > 0 && spoilageRisk !== "High";
   const decision: "Sell Now" | "Store" = shouldStore ? "Store" : "Sell Now";
 
   const locCrop = tLocale(input.language, crop, {});
@@ -1313,7 +1313,9 @@ export function simulatePriceForecast(input: PriceForecastInput): PriceForecastR
       valueAdd: ["Wait for off-season premium", "On-site solar drying"],
       local: ["Farmer cooperative sale", "Local mandi (Spot sale)"]
     },
-    alternativeReasoning: `Selling now earns Rs ${Math.round(currentPrice * input.quantityQuintals).toLocaleString("en-IN")}. Strategic waiting (${bestDay} days) could net Rs ${Math.round((bestPrice * input.quantityQuintals) - totalStorageCost).toLocaleString("en-IN")} after costs.`,
+    alternativeReasoning: decision === "Store"
+      ? `STRATEGIC STORE: Waiting ${bestDay} days yields net Rs ${Math.round(netGainLoss).toLocaleString("en-IN")} MORE than selling now. (Revenue Rs ${(forecastedPrice * input.quantityQuintals).toLocaleString("en-IN")} - Storage Rs ${totalStorageCost.toLocaleString("en-IN")} = Rs ${(netGainLoss + currentPrice * input.quantityQuintals).toLocaleString("en-IN")} total).`
+      : `SELL NOW: Selling at current Rs ${currentPrice}/q earns Rs ${(currentPrice * input.quantityQuintals).toLocaleString("en-IN")} today. Storing would result in a net LOSS of Rs ${Math.abs(Math.round(netGainLoss)).toLocaleString("en-IN")} after storage costs.`,
   };
 }
 
@@ -1408,22 +1410,26 @@ export function simulateRiskAdvisory(input: RiskAdvisoryInput): RiskAdvisoryResu
     reason: tLocale(input.language, "cc_well", { region: tLocale(input.language, input.region, {}), season: tLocale(input.language, input.season, {}) }),
   }));
 
-  // Recommended combinations for intercropping
+  // Recommended combinations for intercropping (Aligned with spec)
   const combinations: { crops: string[]; reason: string; profitBoost: number }[] = [];
-  const compMap: Record<string, { partner: string; reason: string }> = {
-    Maize: { partner: "Soybean", reason: "Maize provides shade while Soybean fixes nitrogen, improving overall soil health and yield." },
-    Cotton: { partner: "Groundnut", reason: "Groundnut acts as a cover crop, reducing weeding costs and adding nitrogen for Cotton." },
-    Rice: { partner: "Soybean", reason: "Post-rice soybean utilizes residual moisture and improves soil structure for next cycle." },
-    Wheat: { partner: "Maize", reason: "Relay cropping of Maize in late Wheat stages optimizes land use and seasonal transition." },
+  const compMap: Record<string, { partner: string; reason: string; season: string }> = {
+    'Rice': { partner: "Soybean", reason: "Soybean fixes nitrogen, reducing fertilizer needs for Rice.", season: "Kharif" },
+    'Maize': { partner: "Beans", reason: "Maize provides structural support for climbing beans.", season: "Kharif" },
+    'Wheat': { partner: "Mustard", reason: "Mustard acts as a trap crop for pests, protecting the Wheat.", season: "Rabi" },
+    'Tomato': { partner: "Onion", reason: "Onion's strong scent repels pests that typically attack Tomato.", season: "Zaid" },
   };
 
   climate.suitableCrops.forEach(crop => {
-    if (compMap[crop] && climate.suitableCrops.includes(compMap[crop].partner)) {
-      const partner = compMap[crop].partner;
-      if (!combinations.some(c => c.crops.includes(crop) && c.crops.includes(partner))) {
+    const entry = compMap[crop];
+    if (entry && entry.season === input.season) {
+      const partner = entry.partner;
+      // Only suggest if partner is also suitable AND we have a rising trend (Strategic Spec)
+      const mockPriceTrend = seededRandom(seed, 600) > 0.4 ? "Rising" : "Stable"; // Simulate market filter
+      
+      if (!combinations.some(c => c.crops.includes(crop) && c.crops.includes(partner)) && mockPriceTrend === "Rising") {
         combinations.push({
           crops: [crop, partner],
-          reason: input.language === 'hi' ? "नाइट्रोजन स्थिरीकरण और बेहतर भूमि उपयोग" : input.language === 'or' ? "ଯବକ୍ଷାରଜାନ ସ୍ଥିରୀକରଣ ଏବଂ ଉନ୍ନତ ଜମି ବ୍ୟବହାର" : compMap[crop].reason,
+          reason: input.language === 'hi' ? "नाइट्रोजन स्थिरीकरण और बेहतर भूमि उपयोग" : input.language === 'or' ? "ଯବକ୍ଷାରଜାନ ସ୍ଥିରୀକରଣ ଏବଂ ଉନ୍ନତ ଜମି ବ୍ୟବହାର" : entry.reason,
           profitBoost: 15,
         });
       }
